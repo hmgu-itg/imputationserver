@@ -72,13 +72,13 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		log = new Log(context);
 		
-		Iterator<Map.Entry<String, String>> iter = context.getConfiguration().iterator();
-		log.info("\nOUTPUT CONFIG\n");
-		while (iter.hasNext()) {
-		    Map.Entry<String, String> e = iter.next();
-		    log.info("CONFIG: "+e.getKey() +":" + e.getValue());
-		}
-		log.info("\nEND CONFIG\n");
+		// Iterator<Map.Entry<String, String>> iter = context.getConfiguration().iterator();
+		// log.info("\nOUTPUT CONFIG\n");
+		// while (iter.hasNext()) {
+		//     Map.Entry<String, String> e = iter.next();
+		//     log.info("CONFIG: "+e.getKey() +":" + e.getValue());
+		// }
+		// log.info("\nEND CONFIG\n");
 		
 		// get parameters
 		ParameterStore parameters = new ParameterStore(context);
