@@ -13,6 +13,7 @@ import genepi.hadoop.log.Log;
 import genepi.hadoop.command.Command;
 import genepi.imputationserver.steps.vcf.VcfChunk;
 import genepi.imputationserver.steps.vcf.VcfChunkOutput;
+import genepi.imputationserver.util.DefaultPreferenceStore;
 import genepi.io.FileUtil;
 import genepi.riskscore.io.Chunk;
 import genepi.riskscore.io.PGSCatalog;
@@ -234,6 +235,24 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
+		// add eagle_threads to binding -----------------------
+		int nthreads=1;
+		File jobConfig = new File(FileUtil.path(getFolder(ImputationPipeline.class),"job.config"));
+		DefaultPreferenceStore store = new DefaultPreferenceStore();
+		if (jobConfig.exists())
+		    store.load(jobConfig);
+		else
+		    log.info("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
+		if (store.getString("eagle.threads") != null && !store.getString("eagle.threads").equals("")){
+		    try{
+			nthreads=Integer.parseInt(store.getString("eagle.threads"));
+		    }
+		    catch (NumberFormatException e){
+			e.printStackTrace();
+		    }
+		}
+		binding.put("eagle_threads",nthreads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(eagleParams, binding);
 
@@ -326,6 +345,24 @@ public class ImputationPipeline {
 		binding.put("chr", chr);
 		binding.put("unphased", false);
 		binding.put("mapMinimac", mapMinimac);
+		// add minimac_threads to binding -----------------------
+		int nthreads=1;
+		File jobConfig = new File(FileUtil.path(getFolder(ImputationPipeline.class),"job.config"));
+		DefaultPreferenceStore store = new DefaultPreferenceStore();
+		if (jobConfig.exists())
+		    store.load(jobConfig);
+		else
+		    log.info("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
+		if (store.getString("minimac4.threads") != null && !store.getString("minimac4.threads").equals("")){
+		    try{
+			nthreads=Integer.parseInt(store.getString("minimac4.threads"));
+		    }
+		    catch (NumberFormatException e){
+			e.printStackTrace();
+		    }
+		}
+		binding.put("minimac_threads",nthreads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(minimacParams, binding);
 
