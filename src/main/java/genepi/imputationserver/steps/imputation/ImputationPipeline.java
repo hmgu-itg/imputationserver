@@ -351,8 +351,6 @@ public class ImputationPipeline {
 		DefaultPreferenceStore store = new DefaultPreferenceStore();
 		if (jobConfig.exists())
 		    store.load(jobConfig);
-		else
-		    log.info("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 		if (store.getString("minimac4.threads") != null && !store.getString("minimac4.threads").equals("")){
 		    try{
 			nthreads=Integer.parseInt(store.getString("minimac4.threads"));
