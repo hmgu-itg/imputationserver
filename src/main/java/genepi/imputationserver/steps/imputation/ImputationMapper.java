@@ -227,7 +227,8 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		pipeline.setPhasingWindow(phasingWindow);
 		pipeline.setBuild(build);
 		pipeline.setMinimacWindow(window);
-
+		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
+		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
 	}
 
 	@Override
