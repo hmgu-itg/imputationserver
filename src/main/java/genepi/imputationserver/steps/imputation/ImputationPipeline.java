@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.control.CompilationFailedException;
 
@@ -55,6 +56,10 @@ public class ImputationPipeline {
 
 	private String mapMinimac;
 
+	private int eagleThreads;
+    
+	private int minimac4Threads;
+    
 	private String mapEagleFilename = "";
 
 	private String refEagleFilename = "";
@@ -236,22 +241,7 @@ public class ImputationPipeline {
 		binding.put("start", start);
 		binding.put("end", end);
 		// add eagle_threads to binding -----------------------
-		int nthreads=1;
-		File jobConfig = new File(FileUtil.path(getFolder(ImputationPipeline.class),"job.config"));
-		DefaultPreferenceStore store = new DefaultPreferenceStore();
-		if (jobConfig.exists())
-		    store.load(jobConfig);
-		else
-		    log.info("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
-		if (store.getString("eagle.threads") != null && !store.getString("eagle.threads").equals("")){
-		    try{
-			nthreads=Integer.parseInt(store.getString("eagle.threads"));
-		    }
-		    catch (NumberFormatException e){
-			e.printStackTrace();
-		    }
-		}
-		binding.put("eagle_threads",nthreads);
+		binding.put("eagle_threads",eagleThreads);
 		// ----------------------------------------------------
 
 		String[] params = createParams(eagleParams, binding);
@@ -346,20 +336,7 @@ public class ImputationPipeline {
 		binding.put("unphased", false);
 		binding.put("mapMinimac", mapMinimac);
 		// add minimac_threads to binding -----------------------
-		int nthreads=1;
-		File jobConfig = new File(FileUtil.path(getFolder(ImputationPipeline.class),"job.config"));
-		DefaultPreferenceStore store = new DefaultPreferenceStore();
-		if (jobConfig.exists())
-		    store.load(jobConfig);
-		if (store.getString("minimac4.threads") != null && !store.getString("minimac4.threads").equals("")){
-		    try{
-			nthreads=Integer.parseInt(store.getString("minimac4.threads"));
-		    }
-		    catch (NumberFormatException e){
-			e.printStackTrace();
-		    }
-		}
-		binding.put("minimac_threads",nthreads);
+		binding.put("minimac_threads",minimac4Threads);
 		// ----------------------------------------------------
 
 		String[] params = createParams(minimacParams, binding);
@@ -471,6 +448,14 @@ public class ImputationPipeline {
 
 	public void setPhasingWindow(int phasingWindow) {
 		this.phasingWindow = phasingWindow;
+	}
+
+	public void setEagleThreads(int n) {
+		this.eagleThreads=n;
+	}
+
+	public void setMinimac4Threads(int n) {
+		this.minimac4Threads=n;
 	}
 
 	public void setBuild(String build) {
