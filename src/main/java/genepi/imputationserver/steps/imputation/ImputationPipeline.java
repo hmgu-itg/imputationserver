@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.control.CompilationFailedException;
 
@@ -13,6 +14,7 @@ import genepi.hadoop.log.Log;
 import genepi.hadoop.command.Command;
 import genepi.imputationserver.steps.vcf.VcfChunk;
 import genepi.imputationserver.steps.vcf.VcfChunkOutput;
+import genepi.imputationserver.util.DefaultPreferenceStore;
 import genepi.io.FileUtil;
 import genepi.riskscore.io.Chunk;
 import genepi.riskscore.io.PGSCatalog;
@@ -54,6 +56,10 @@ public class ImputationPipeline {
 
 	private String mapMinimac;
 
+	private int eagleThreads;
+    
+	private int minimac4Threads;
+    
 	private String mapEagleFilename = "";
 
 	private String refEagleFilename = "";
@@ -234,6 +240,9 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
+		// add eagle_threads to binding -----------------------
+		binding.put("eagle_threads",eagleThreads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(eagleParams, binding);
 
@@ -326,6 +335,9 @@ public class ImputationPipeline {
 		binding.put("chr", chr);
 		binding.put("unphased", false);
 		binding.put("mapMinimac", mapMinimac);
+		// add minimac_threads to binding -----------------------
+		binding.put("minimac_threads",minimac4Threads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(minimacParams, binding);
 
@@ -436,6 +448,14 @@ public class ImputationPipeline {
 
 	public void setPhasingWindow(int phasingWindow) {
 		this.phasingWindow = phasingWindow;
+	}
+
+	public void setEagleThreads(int n) {
+		this.eagleThreads=n;
+	}
+
+	public void setMinimac4Threads(int n) {
+		this.minimac4Threads=n;
 	}
 
 	public void setBuild(String build) {
