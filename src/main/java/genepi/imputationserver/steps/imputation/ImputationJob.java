@@ -47,6 +47,9 @@ public class ImputationJob extends HadoopJob {
 
 	public static final String INCLUDE_SCORE_FILE = "INCLUDE_SCORE_FILE";
 
+        public static final String EAGLE_THREADS = "1";
+        public static final String MINIMAC4_THREADS = "1";
+
 	private String refPanelHdfs;
 
 	private String logFilename;
@@ -243,6 +246,14 @@ public class ImputationJob extends HadoopJob {
 
 	public void setRefPanel(String refPanel) {
 		set(REF_PANEL, refPanel);
+	}
+
+	public void setEagleThreads(int n) {
+		set(EAGLE_THREADS,n);
+	}
+
+	public void setMinimac4Threads(int n) {
+		set(MINIMAC4_THREADS,n);
 	}
 
 	public void setRefPanelHdfs(String refPanelHdfs) {

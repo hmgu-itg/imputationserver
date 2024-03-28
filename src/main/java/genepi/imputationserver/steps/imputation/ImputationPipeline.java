@@ -6,12 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.control.CompilationFailedException;
 
+import genepi.hadoop.log.Log;
 import genepi.hadoop.command.Command;
 import genepi.imputationserver.steps.vcf.VcfChunk;
 import genepi.imputationserver.steps.vcf.VcfChunkOutput;
+import genepi.imputationserver.util.DefaultPreferenceStore;
 import genepi.io.FileUtil;
 import genepi.riskscore.io.Chunk;
 import genepi.riskscore.io.PGSCatalog;
@@ -58,6 +61,10 @@ public class ImputationPipeline {
 
 	private String mapMinimac;
 
+	private int eagleThreads;
+    
+	private int minimac4Threads;
+    
 	private String mapEagleFilename = "";
 
 	private String refEagleFilename = "";
@@ -80,16 +87,18 @@ public class ImputationPipeline {
 
 	private SimpleTemplateEngine engine = new SimpleTemplateEngine();
 
-	public boolean execute(VcfChunk chunk, VcfChunkOutput output) throws InterruptedException, IOException {
-
-		System.out.println("Starting pipeline for chunk " + chunk + " [Phased: " + chunk.isPhased() + "]...");
+    public boolean execute(VcfChunk chunk, VcfChunkOutput output,Log log) throws InterruptedException, IOException {
+	log.info("Starting pipeline for chunk " + chunk + " [Phased: " + chunk.isPhased() + "]");
+	System.out.println("Starting pipeline for chunk " + chunk + " [Phased: " + chunk.isPhased() + "]...");
 
 		if (!new File(refFilename).exists()) {
+			log.info("ReferencePanel '" + refFilename + "' not found.");
 			System.out.println("ReferencePanel '" + refFilename + "' not found.");
 			return false;
 		}
 
 		if (!new File(output.getVcfFilename()).exists()) {
+			log.info("vcf.gz file not found: " + output.getVcfFilename());
 			System.out.println("vcf.gz file not found: " + output.getVcfFilename());
 			return false;
 		}
@@ -103,8 +112,10 @@ public class ImputationPipeline {
 		Command tabix = new Command(tabixCommand);
 		tabix.setSilent(false);
 		tabix.setParams(output.getVcfFilename());
+			log.info("TABIX Command: " + tabix.getExecutedCommand());
 		System.out.println("Command: " + tabix.getExecutedCommand());
 		if (tabix.execute() != 0) {
+			log.info("Error during index creation: " + tabix.getStdOut());
 			System.out.println("Error during index creation: " + tabix.getStdOut());
 			return false;
 		}
@@ -112,6 +123,8 @@ public class ImputationPipeline {
 		if (chunk.isPhased()) {
 
 			FileUtils.moveFile(new File(output.getVcfFilename()), new File(output.getPhasedVcfFilename()));
+			log.info("Chunk already phased. Move file " + output.getVcfFilename() + " to "
+					+ output.getPhasedVcfFilename() + ".");
 			System.out.println("Chunk already phased. Move file " + output.getVcfFilename() + " to "
 					+ output.getPhasedVcfFilename() + ".");
 
@@ -125,6 +138,7 @@ public class ImputationPipeline {
 			if (phasingEngine.equals("beagle")) {
 
 				if (!new File(refBeagleFilename).exists()) {
+			log.info("Beagle: Reference '" + refBeagleFilename + "' not found.");
 					System.out.println("Beagle: Reference '" + refBeagleFilename + "' not found.");
 					return false;
 				}
@@ -133,10 +147,12 @@ public class ImputationPipeline {
 			} else {
 
 				if (!new File(refEagleFilename).exists()) {
+			log.info("Eagle: Reference '" + refEagleFilename + "' not found.");
 					System.out.println("Eagle: Reference '" + refEagleFilename + "' not found.");
 					return false;
 				}
-				successful = phaseWithEagle(chunk, output, refEagleFilename, mapEagleFilename);
+				log.info("STARTING PHASING WITH EAGLE");
+				successful = phaseWithEagle(chunk, output, refEagleFilename, mapEagleFilename,log);
 				phasingVersion = EAGLE_VERSION;
 			}
 
@@ -145,8 +161,10 @@ public class ImputationPipeline {
 			statistic.setPhasingTime(time);
 
 			if (successful) {
+			log.info("  " + phasingVersion + " finished successfully. [" + time + " sec]");
 				System.out.println("  " + phasingVersion + " finished successfully. [" + time + " sec]");
 			} else {
+			log.info("  " + phasingVersion + " failed. [" + time + " sec]");
 				System.out.println("  " + phasingVersion + " failed. [" + time + " sec]");
 				return false;
 			}
@@ -163,16 +181,20 @@ public class ImputationPipeline {
 		// Imputation
 
 		long time = System.currentTimeMillis();
+			log.info("STARTING IMPUTATION");
 		boolean successful = imputeVCF(output);
+			log.info("IMPUTATION DONE");
 		time = (System.currentTimeMillis() - time) / 1000;
 
 		statistic.setImputationTime(time);
 
 		if (successful) {
+		    log.info("  " + IMPUTATION_VERSION + " finished successfully. [" + time + " sec]");
 			System.out.println("  " + IMPUTATION_VERSION + " finished successfully. [" + time + " sec]");
 		} else {
 			String stdOut = FileUtil.readFileAsString(output.getPrefix() + ".minimac.out");
 			String stdErr = FileUtil.readFileAsString(output.getPrefix() + ".minimac.err");
+			log.info("  " + IMPUTATION_VERSION + " failed. [" + time + " sec]\n\nStdOut:\n" + stdOut+ "\nStdErr:\n" + stdErr);
 			System.out.println("  " + IMPUTATION_VERSION + " failed. [" + time + " sec]\n\nStdOut:\n" + stdOut
 					+ "\nStdErr:\n" + stdErr);
 			return false;
@@ -203,8 +225,10 @@ public class ImputationPipeline {
 
 	}
 
-	public boolean phaseWithEagle(VcfChunk input, VcfChunkOutput output, String reference, String mapFilename)
+    public boolean phaseWithEagle(VcfChunk input, VcfChunkOutput output, String reference, String mapFilename,Log log)
 			throws IOException {
+	
+				log.info("PHASING WITH EAGLE");
 
 		// calculate phasing positions
 		int start = input.getStart() - phasingWindow;
@@ -223,20 +247,26 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
+		// add eagle_threads to binding -----------------------
+		binding.put("eagle_threads",eagleThreads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(eagleParams, binding);
 
 		// eagle command
 		Command eagle = new Command(eagleCommand);
+		//eagle.setLog(log);
 		eagle.setSilent(false);
 		eagle.setParams(params);
 		eagle.saveStdOut(output.getPrefix() + ".eagle.out");
 		eagle.saveStdErr(output.getPrefix() + ".eagle.err");
+		log.info("Command: " + eagle.getExecutedCommand());
 		System.out.println("Command: " + eagle.getExecutedCommand());
 
 		int status = eagle.execute();
 
 		if (status != 0) {
+		    log.info("Eagle return status: " + status);
 			System.out.println("Eagle return status: " + status);
 			return false;
 		}
@@ -324,6 +354,9 @@ public class ImputationPipeline {
 		binding.put("mapMinimac", mapMinimac);
 		binding.put("minR2", minR2);
 		binding.put("decay", minimacDecay);
+		// add minimac_threads to binding -----------------------
+		binding.put("minimac_threads",minimac4Threads);
+		// ----------------------------------------------------
 
 		String[] params = createParams(minimacParams, binding);
 
@@ -445,6 +478,14 @@ public class ImputationPipeline {
 
 	public void setPhasingWindow(int phasingWindow) {
 		this.phasingWindow = phasingWindow;
+	}
+
+	public void setEagleThreads(int n) {
+		this.eagleThreads=n;
+	}
+
+	public void setMinimac4Threads(int n) {
+		this.minimac4Threads=n;
 	}
 
 	public void setBuild(String build) {

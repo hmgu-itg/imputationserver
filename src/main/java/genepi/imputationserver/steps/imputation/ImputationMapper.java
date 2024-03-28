@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.*;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -72,7 +73,15 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		HdfsUtil.setDefaultConfiguration(context.getConfiguration());
 
 		log = new Log(context);
-
+		
+		// Iterator<Map.Entry<String, String>> iter = context.getConfiguration().iterator();
+		// log.info("\nOUTPUT CONFIG\n");
+		// while (iter.hasNext()) {
+		//     Map.Entry<String, String> e = iter.next();
+		//     log.info("CONFIG: "+e.getKey() +":" + e.getValue());
+		// }
+		// log.info("\nEND CONFIG\n");
+		
 		// get parameters
 		ParameterStore parameters = new ParameterStore(context);
 
@@ -238,6 +247,8 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		pipeline.setMinR2(minR2);
 		pipeline.setDecay(decay);
 
+		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
+		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
 	}
 
 	@Override
@@ -275,10 +286,13 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 			pipeline.setScores(scores);
 			pipeline.setIncludeScoreFilename(includeScoresFilename);
 
-			boolean succesful = pipeline.execute(chunk, outputChunk);
+			    log.info("EXECUTING PIPELINE");
+			    boolean succesful = pipeline.execute(chunk, outputChunk,log);
+			    log.info("DONE EXECUTING PIPELINE, RESULT: "+succesful);
 			ImputationStatistic statistics = pipeline.getStatistic();
 
 			if (!succesful) {
+			    log.info("PHASING/IMPUTATION FAILED");
 				log.stop("Phasing/Imputation failed!", "");
 				return;
 			}

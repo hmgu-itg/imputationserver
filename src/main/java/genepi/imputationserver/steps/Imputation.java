@@ -57,6 +57,36 @@ public class Imputation extends ParallelHadoopJobStep {
 
 		final String folder = getFolder(Imputation.class);
 
+		// load job.config
+		File file_jc = new File(folder + "/job.config");
+		DefaultPreferenceStore store_jc = new DefaultPreferenceStore();
+		if (file_jc.exists()) {
+		    log.info("Loading distributed configuration file '" + file_jc.getAbsolutePath() + "'...");
+		    store_jc.load(file_jc);
+
+		} else {
+		    log.info("Configuration file '" + file_jc.getAbsolutePath()
+			     + "' not available. Use default values");
+
+		}
+
+		int eagle_t=1; // default
+		if (store_jc.getKeys().contains("eagle.threads")){
+		    eagle_t=Integer.parseInt(store_jc.getString("eagle.threads"));
+		}
+		else{
+		    log.info("eagle.threads is not in job.config; using default: 1");
+		}
+		log.info("eagle_t: "+eagle_t);
+		int minimac_t=1; // default
+		if (store_jc.getKeys().contains("minimac4.threads")){
+		    minimac_t=Integer.parseInt(store_jc.getString("minimac4.threads"));
+		}
+		else{
+		    log.info("minimac4.threads is not in job.config; using default: 1");
+		}
+		log.info("minimac_t: "+minimac_t);
+		
 		// inputs
 		String input = context.get("chunkFileDir");
 		String reference = context.get("refpanel");
@@ -196,6 +226,8 @@ public class Imputation extends ParallelHadoopJobStep {
 				String hdfsFilenameChromosome = resolvePattern(panel.getHdfs(), chr);
 				job.setRefPanelHdfs(hdfsFilenameChromosome);
 
+				job.setEagleThreads(eagle_t);
+				job.setMinimac4Threads(minimac_t);
 				job.setR2Filter(r2Filter);
 				job.setBuild(panel.getBuild());
 				if (panel.getMapMinimac() != null) {
@@ -446,7 +478,7 @@ public class Imputation extends ParallelHadoopJobStep {
 
 			// everything fine
 			ok = true;
-			context.println("Job chr_" + id + " (" + job.getJobId() + ") executed sucessful.");
+			context.println("Job chr_" + id + " (" + job.getJobId() + ") executed sucessfully.");
 		} else {
 
 			// one job failed
