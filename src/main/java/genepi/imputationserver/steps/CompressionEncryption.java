@@ -85,51 +85,48 @@ public class CompressionEncryption extends WorkflowStep {
 	@Override
 	public boolean run(WorkflowContext context) {
 		int nthreads = 1; // default
-		String workingDirectory = getFolder(CompressionEncryption.class);
+
+		// currently not used
+		//String outputScores = context.get("outputScores");
+		//String pgsOutput = context.get("pgs_output");
+		//PgsPanel pgsPanel = PgsPanel.loadFromProperties(context.getData("pgsPanel"));
+		
 		String output = context.get("outputimputation");
-		String outputScores = context.get("outputScores");
 		String localOutput = context.get("local");
-		String pgsOutput = context.get("pgs_output");
-		String aesEncryptionValue = context.get("aesEncryption");
-		String meta = context.get("meta");
 		String mode = context.get("mode");
+		
 		String password = context.get("password");
-		PgsPanel pgsPanel = PgsPanel.loadFromProperties(context.getData("pgsPanel"));
+		if (password == null || (password != null && password.equals("auto"))) {
+		    password = PasswordCreator.createPassword();
+		}
 
 		boolean phasingOnly = false;
 		if (mode != null && mode.equals("phasing"))
 			phasingOnly = true;
 
-		boolean mergeMetaFiles = !phasingOnly && (meta != null && meta.equals("yes"));
-		boolean aesEncryption = (aesEncryptionValue != null && aesEncryptionValue.equals("yes"));
-
 		// read config if mails should be sent
-		String folderConfig = getFolder(CompressionEncryption.class);
-		File jobConfig = new File(FileUtil.path(folderConfig, "job.config"));
-
+		File jobConfig = new File(FileUtil.path(getFolder(CompressionEncryption.class), "job.config"));
 		DefaultPreferenceStore store = new DefaultPreferenceStore();
 		if (jobConfig.exists())
-			store.load(jobConfig);
+		    store.load(jobConfig);
 		else
-			context.log(
-					"Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
+		    context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 
 		if (store.getString("export.threads") != null && !store.getString("export.threads").equals("")) {
-			try {
-				nthreads = Integer.parseInt(store.getString("export.threads"));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-			}
+		    try {
+			nthreads = Integer.parseInt(store.getString("export.threads"));
+		    } catch (NumberFormatException e) {
+			e.printStackTrace();
+		    }
 		}
 
 		if (nthreads == 1)
-			context.log("Export: using 1 thread");
+		    context.log("Export: using 1 thread");
 		else
-			context.log("Export: using up to " + nthreads + " threads");
+		    context.log("Export: using up to " + nthreads + " threads");
 
 		try {
 			context.beginTask("Export data ...");
-
 			// get sorted directories
 			List<String> folders = HdfsUtil.getDirectories(output);
 			ImputationResults imputationResults = new ImputationResults(folders, phasingOnly);
@@ -145,8 +142,7 @@ public class CompressionEncryption extends WorkflowStep {
 			for (List<String> x : chr_batches)
 				context.log(String.join(", ", x));
 
-			String checksumFilename = FileUtil.path(localOutput, "results.md5");
-			LineWriter writer = new LineWriter(checksumFilename);
+			LineWriter writer = new LineWriter(FileUtil.path(localOutput, "results.md5"));
 
 			String temp = FileUtil.path(localOutput, "temp");
 			FileUtil.createDirectory(temp);
@@ -168,9 +164,7 @@ public class CompressionEncryption extends WorkflowStep {
 			// delete temporary files
 			HdfsUtil.delete(output);
 
-			context.endTask("Exported data", WorkflowContext.OK); // TODO: If we decide to re-introduce PGS feature, we
-																	// need to move this line accordingly
-
+			context.endTask("Exported data", WorkflowContext.OK); // TODO: If we decide to re-introduce PGS feature, we need to move this line accordingly
 		} catch (Exception e) {
 			e.printStackTrace();
 			context.endTask("Data export failed: " + e.getMessage(), WorkflowContext.ERROR);
@@ -196,14 +190,13 @@ public class CompressionEncryption extends WorkflowStep {
 		if (store.getString("server.url") != null && !store.getString("server.url").isEmpty())
 			serverUrl = store.getString("server.url");
 
-		String sanityCheck = "yes";
-		if (store.getString("sanitycheck") != null && !store.getString("sanitycheck").equals("")) {
-			sanityCheck = store.getString("sanitycheck");
-		}
-		if (password == null || (password != null && password.equals("auto"))) {
-			password = PasswordCreator.createPassword();
-		}
-
+		// this part is not used anywhere
+		//
+		// String sanityCheck = "yes";
+		// if (store.getString("sanitycheck") != null && !store.getString("sanitycheck").equals("")) {
+		// 	sanityCheck = store.getString("sanitycheck");
+		// }
+		
 		// send email
 		if (notification.equals("yes")) {
 			Object mail = context.getData("cloudgene.user.mail");
@@ -227,8 +220,7 @@ public class CompressionEncryption extends WorkflowStep {
 				return false;
 			}
 		} else {
-			context.ok(
-					"Email notification is disabled. All results are encrypted with password <b>" + password + "</b>");
+			context.ok("Email notification is disabled. All results are encrypted with password <b>" + password + "</b>");
 			return true;
 		}
 	}
@@ -409,6 +401,7 @@ public class CompressionEncryption extends WorkflowStep {
 		}
 	}
 
+    // not used
 	public void createEncryptedZipFileFromFolder(File file, File folder, String password, boolean aesEncryption)
 			throws IOException {
 		ZipParameters param = new ZipParameters();
@@ -427,6 +420,7 @@ public class CompressionEncryption extends WorkflowStep {
 		zipFile.close();
 	}
 
+    // not used
 	public void createZipFile(File file, File folder) throws IOException {
 		ZipFile zipFile = new ZipFile(file);
 		if (folder.isFile()) {
