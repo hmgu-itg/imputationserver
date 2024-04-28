@@ -62,6 +62,16 @@ workflow:
        type: app_list
        category: RefPanel
 
+     - id: chunksize
+       description: Chunk size
+       type: list
+       value: 1GB
+       values:
+         1GB: 1GB
+         100MB: 100MB
+         10MB: 10MB
+         1MB: 1MB
+
      - id: files
        description: Input Files (<a href="http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41" target="_blank">VCF</a>)
        type: local-folder
