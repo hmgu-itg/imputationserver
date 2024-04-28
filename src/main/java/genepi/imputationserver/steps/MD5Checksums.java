@@ -1,6 +1,7 @@
 package genepi.imputationserver.steps;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
@@ -56,7 +57,7 @@ public class MD5Checksums extends WorkflowStep {
 		String res=checksum(digest,new File(fname));
 		pw.println(fname+" "+res);
 		context.log("checksum: "+fname+" "+res);
-	    }catch (IOException ex){
+	    }catch (IOException e){
 		context.endTask("Exception: "+e.toString(), WorkflowContext.ERROR);
 		if (pw != null) {
 		    pw.close();
