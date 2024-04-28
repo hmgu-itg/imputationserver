@@ -18,6 +18,11 @@ workflow:
       jar: imputationserver.jar
       classname: genepi.imputationserver.steps.InputValidation
 
+    - name: MD5 checksum calculation
+      jar: imputationserver.jar
+      classname: genepi.imputationserver.steps.MD5Checksums
+      generates: $md5sums
+
     - name: Quality Control
       jar: imputationserver.jar
       classname: genepi.imputationserver.steps.FastQualityControl
@@ -175,6 +180,12 @@ workflow:
       mergeOutput: true
       removeHeader: false
       zip: false
+
+    - id: md5sums
+      description: MD5 checksums of input VCFs
+      type: local-file
+      download: true
+      temp: false
 
     - id: chunksDir
       description: Actual chunk files
