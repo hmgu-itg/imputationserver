@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.commons.io.FilenameUtils;
+
 import cloudgene.sdk.internal.WorkflowContext;
 import cloudgene.sdk.internal.WorkflowStep;
 import genepi.io.FileUtil;
@@ -19,15 +21,12 @@ public class MD5Checksums extends WorkflowStep {
 	MessageDigest digest=null;
 	String files=context.get("files");
 	String outfile=context.get("md5sums");
-	    
+
 	context.beginTask("Calculating md5 sums of the input VCFs");
+	context.log("files: "+files);
+	context.log("outfile: "+outfile);
 	if (!new File(files).exists()) {
 	    context.endTask("No input folder specified", WorkflowContext.ERROR);
-	    return false;
-	}
-	    
-	if (!new File(outfile).exists()) {
-	    context.endTask("No MD5 output file specified", WorkflowContext.ERROR);
 	    return false;
 	}
 
@@ -55,7 +54,7 @@ public class MD5Checksums extends WorkflowStep {
 	for (String fname: vcfFiles){
 	    try{
 		String res=checksum(digest,new File(fname));
-		pw.println(fname+" "+res);
+		pw.println(FilenameUtils.getBaseName(fname)+"."+FilenameUtils.getExtension(fname)+" "+res);
 		context.log("checksum: "+fname+" "+res);
 	    }catch (IOException e){
 		context.endTask("Exception: "+e.toString(), WorkflowContext.ERROR);
@@ -69,7 +68,7 @@ public class MD5Checksums extends WorkflowStep {
 	    pw.close();
 	}
 	    
-	context.endTask("checksums done",WorkflowContext.OK);
+	context.endTask("MD5 checksums done",WorkflowContext.OK);
 	return true;	    
     }
 
