@@ -64,6 +64,10 @@ public class FastQualityControl extends WorkflowStep {
 
 		// load reference panels
 		RefPanelList panels = RefPanelList.loadFromFile(FileUtil.path(folder, RefPanelList.FILENAME));
+		// context.log("reference: "+reference);
+		// for (RefPanel p : panels.getPanels()) {
+		//     context.log("panel: "+p.getId());
+		// }
 
 		// check reference panel
 		RefPanel panel = null;
@@ -83,6 +87,7 @@ public class FastQualityControl extends WorkflowStep {
 			return false;
 		}
 
+		
 		File dir = new File(inputFiles);
 
 		if (!dir.exists()) {
@@ -191,6 +196,15 @@ public class FastQualityControl extends WorkflowStep {
 		int strandFlips = (int) (panel.getQcFilterByKey("strandFlips"));
 		int alleleSwitches = (int) (panel.getQcFilterByKey("alleleSwitches"));
 		String ranges = panel.getRange();
+
+		context.log("");
+		context.log("panel qcFilter:");
+		context.log("reference overlap: "+referenceOverlap);
+		context.log("min SNPs: "+minSnps);
+		context.log("sample call rate: "+sampleCallrate);
+		context.log("allele switches: "+alleleSwitches);
+		context.log("strand flips: "+strandFlips);
+		context.log("");
 
 		if (ranges != null) {
 			HashSet<RangeEntry> rangeEntries = new HashSet<RangeEntry>();
