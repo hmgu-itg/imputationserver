@@ -170,8 +170,12 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		// create temp directory
 		DefaultPreferenceStore store = new DefaultPreferenceStore(context.getConfiguration());
-		folder = store.getString("minimac.tmp");
-		folder = FileUtil.path(folder, context.getTaskAttemptID().toString());
+		String mm4_tmp=store.getString("minimac.tmp");
+		System.out.println("minimac.temp from the DefaultPreferenceStore: "+mm4_tmp);
+		String task_attempt_id=context.getTaskAttemptID().toString();
+		System.out.println("Task attempt ID: "+task_attempt_id);
+		folder = FileUtil.path(mm4_tmp,task_attempt_id);
+		System.out.println("Task attempt folder: "+folder);
 		boolean created = FileUtil.createDirectory(folder);
 
 		if (!created) {
@@ -249,6 +253,8 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
 		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
+		//pipeline.setMinimac4TempBuffer(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_TEMP_BUFFER)));
+		//pipeline.setMinimac4TempPrefix(folder+"_temp_mm4_");
 	}
 
 	@Override
