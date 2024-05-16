@@ -83,7 +83,7 @@ public class DefaultPreferenceStore {
 				"-jar ${beagle} ref=${ref} gt=${vcf} out=${prefix} nthreads=1 chrom=${chr}:${start}-${end} map=${map} impute=false");
 		defaults.setProperty("ref.fasta", "v37");
 		defaults.setProperty("contact.name", "Imputation Server Support");
-		defaults.setProperty("contact.email", "support@imputation.helmholtz-munich.de");
+		defaults.setProperty("contact.email", "support@imputationserver.helmholtz-munich.de");
 		defaults.setProperty("hg38Tohg19", "chains/hg38ToHg19.over.chain.gz");
 		defaults.setProperty("hg19Tohg38", "chains/hg19ToHg38.over.chain.gz");
 		defaults.setProperty("sanitycheck", "yes");
