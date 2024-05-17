@@ -625,7 +625,109 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	public List<String> prepareChrX(String filename, boolean phased, LineWriter chrXInfoWriter,
+	public List<String> prepareChrX(String filename, boolean phased, LineWriter chrXInfoWriter,HashSet<String> hapSamples) throws IOException {
+		List<String> paths = new Vector<String>();
+		String nonPar = FileUtil.path(chunksDir, X_NON_PAR + ".vcf.gz");
+		String par1 = FileUtil.path(chunksDir, X_PAR1 + ".vcf.gz");
+		String par2 = FileUtil.path(chunksDir, X_PAR2 + ".vcf.gz");
+		VCFFileReader vcfReader = new VCFFileReader(new File(filename), true);
+		VCFHeader header = vcfReader.getFileHeader();
+		int mixedGenotypes[] = null;
+		int count = 0;
+
+		int nonParStart = 2699520;
+		int nonParEnd = 154931044;
+
+		if (build.equals("hg38")) {
+			nonParStart = 2781479;
+			nonParEnd = 155701383;
+		}
+
+		VCFCodec codec = new VCFCodec();
+		codec.setVCFHeader(header,VCFHeaderVersion.VCF4_1);
+		
+		LineReader reader = new LineReader(filename);
+		BGzipLineWriter writer_nonpar = new BGzipLineWriter(nonPar);
+		BGzipLineWriter writer_par1 = new BGzipLineWriter(par1);
+		BGzipLineWriter writer_par2 = new BGzipLineWriter(par2);
+		while (reader.next()) {
+		    String lineString = reader.get();
+		    if (lineString.startsWith("#")) {
+			writer_nonpar.write(lineString);
+			writer_par1.write(lineString);
+			writer_par2.write(lineString);
+		    }
+		    else{
+			String tiles[] = lineString.split("\t", 6);
+			String ref = tiles[3];
+			String alt = tiles[4];
+			// filter invalid alleles
+			if (!GenomicTools.isValid(ref) || !GenomicTools.isValid(alt)) {
+			    excludedSnpsWriter.write(tiles[0] + ":" + tiles[1] + ":" + ref + ":" + alt);
+			    invalidAlleles++;
+			    filtered++;
+			    continue;
+			}
+			// now decode, since it's a valid VCF
+			VariantContext line = codec.decode(lineString);
+			if (line.getContig().equals("23")) {
+			    line = new VariantContextBuilder(line).chr("X").make();
+			    tiles[0]="X";
+			}
+			else if (line.getContig().equals("chr23")) {
+			    line = new VariantContextBuilder(line).chr("chrX").make();
+			    tiles[0]="chrX";
+			}
+
+			if (line.getStart() < nonParStart) {
+			    writer_par1.write(String.join("\t",tiles));
+			    if (!paths.contains(par1)) {
+				paths.add(par1);
+			    }
+			}
+			else if (line.getStart() >= nonParStart && line.getStart() <= nonParEnd) {
+			    count++;
+			    checkPloidy(header.getGenotypeSamples(), line, phased, chrXInfoWriter, hapSamples);
+			    mixedGenotypes = checkMixedGenotypes(mixedGenotypes, line);
+			    writer_nonpar.write(String.join("\t",tiles));
+			    if (!paths.contains(nonPar)) {
+				paths.add(nonPar);
+			    }
+			}
+			else {
+			    writer_par1.write(String.join("\t",tiles));
+			    if (!paths.contains(par2)) {
+				paths.add(par2);
+			    }
+			}
+		    }
+		}
+
+		if (mixedGenotypes != null) {
+		    for (int i = 0; i < mixedGenotypes.length; i++) {
+			double missingRate = mixedGenotypes[i] / (double) count;
+			if (missingRate > mixedGenotypeschrX) {
+			    this.chrXMissingRate = true;
+			    break;
+			}
+		    }
+		}
+
+		vcfReader.close();
+		reader.close();
+		writer_nonpar.close();
+		writer_par1.close();
+		writer_par2.close();
+
+		// create index
+		VcfFileUtil.createIndex(nonPar);
+		VcfFileUtil.createIndex(par1);
+		VcfFileUtil.createIndex(par2);
+		
+		return paths;
+	}
+
+	public List<String> prepareChrX_orig(String filename, boolean phased, LineWriter chrXInfoWriter,
 			HashSet<String> hapSamples) throws IOException {
 
 		List<String> paths = new Vector<String>();
