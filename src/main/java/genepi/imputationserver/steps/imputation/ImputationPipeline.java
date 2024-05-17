@@ -157,7 +157,7 @@ public class ImputationPipeline {
 
 		long time = System.currentTimeMillis();
 			log.info("STARTING IMPUTATION");
-		boolean successful = imputeVCF(output);
+			boolean successful = imputeVCF(output,log);
 			log.info("IMPUTATION DONE");
 		time = (System.currentTimeMillis() - time) / 1000;
 
@@ -295,7 +295,7 @@ public class ImputationPipeline {
 		return true;
 	}
 
-	public boolean imputeVCF(VcfChunkOutput output)
+	public boolean imputeVCF(VcfChunkOutput output,Log log)
 			throws InterruptedException, IOException, CompilationFailedException {
 
 		// create tabix index
