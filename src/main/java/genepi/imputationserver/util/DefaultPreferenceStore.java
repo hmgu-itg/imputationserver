@@ -75,6 +75,8 @@ public class DefaultPreferenceStore {
 		defaults.setProperty("minimac.sendmail", "no");
 		defaults.setProperty("server.url", "https://imputationserver.helmholtz-munich.de");
 		defaults.setProperty("minimac.tmp", "/tmp");
+		defaults.setProperty("minimac4.temp.buffer", "1000");
+		defaults.setProperty("minimac4.temp.prefix", "/tmp");
 		defaults.setProperty("minimac.command",
 				"--region ${chr}:${start}-${end} --overlap ${window} --output ${prefix}.dose.vcf.gz --output-format vcf.gz --format GT,DS,GP,HDS --min-ratio 0.00001 --decay ${decay} --all-typed-sites --sites ${prefix}.info --threads ${minimac_threads} --empirical-output ${prefix}.empiricalDose.vcf.gz ${minR2 != 0 ? '--min-r2 ' + minR2 : ''}  ${mapMinimac != null ? '--map ' + mapMinimac : ''} ${ref} ${vcf}");
 		defaults.setProperty("eagle.command",
