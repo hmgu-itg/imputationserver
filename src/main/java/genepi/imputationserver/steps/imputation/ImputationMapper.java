@@ -170,12 +170,17 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		// create temp directory
 		DefaultPreferenceStore store = new DefaultPreferenceStore(context.getConfiguration());
+		for (Object s: store.getKeys()){
+		    log.info("store: "+s.toString()+"="+store.getString(s.toString()));
+		}
 		String mm4_tmp=store.getString("minimac.tmp");
-		System.out.println("minimac.temp from the DefaultPreferenceStore: "+mm4_tmp);
+		log.info("minimac.tmp from the DefaultPreferenceStore: "+mm4_tmp);
 		String task_attempt_id=context.getTaskAttemptID().toString();
-		System.out.println("Task attempt ID: "+task_attempt_id);
+		log.info("Task attempt ID: "+task_attempt_id);
 		folder = FileUtil.path(mm4_tmp,task_attempt_id);
-		System.out.println("Task attempt folder: "+folder);
+		log.info("Task attempt folder: "+folder);
+		int mm4_temp_buffer=Integer.parseInt(store.getString("minimac4.temp.buffer"));
+		log.info("minimac4 temp buffer: "+mm4_temp_buffer);
 		boolean created = FileUtil.createDirectory(folder);
 
 		if (!created) {
@@ -253,16 +258,18 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
 		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
-		//pipeline.setMinimac4TempBuffer(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_TEMP_BUFFER)));
-		//pipeline.setMinimac4TempPrefix(folder+"_temp_mm4_");
+		pipeline.setMinimac4TempBuffer(mm4_temp_buffer);
+		String mm4_prefix=FileUtil.path(folder,"mm4_temp_");
+		log.info("Minimac temp prefix: "+mm4_prefix);
+		pipeline.setMinimac4TempPrefix(mm4_prefix);
 	}
 
 	@Override
 	protected void cleanup(Context context) throws IOException, InterruptedException {
 		// delete temp directory
-		log.close();
 		FileUtil.deleteDirectory(folder);
-		System.out.println("Delete temp folder.");
+		log.info("Deleting temp folder "+folder);
+		log.close();
 	}
 
 	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
