@@ -26,66 +26,41 @@ import lukfor.progress.TaskService;
 import lukfor.progress.tasks.Task;
 
 public class ImputationPipeline {
-
-	public static final String PIPELINE_VERSION = "michigan-imputationserver-2.0.0";
-
-	public static final String IMPUTATION_VERSION = "minimac-v4.1.6";
-
-	public static final String BEAGLE_VERSION = "beagle.18May20.d20.jar";
-
-	public static final String EAGLE_VERSION = "eagle-2.4";
-
-	private String minimacCommand;
-
-	private String minimacParams;
-
-	private String eagleCommand;
-
-	private String eagleParams;
-
-	private String beagleCommand;
-
-	private String beagleParams;
-
-	private String tabixCommand;
-
-	private int minimacWindow;
-
-	private int minimacDecay;
-
-	private int phasingWindow;
-
-	private double minR2;
-
-	private String refFilename;
-
-	private String mapMinimac;
-
-	private int eagleThreads;
+    public static final String PIPELINE_VERSION = "michigan-imputationserver-2.0.0";
+    public static final String IMPUTATION_VERSION = "minimac-v4.1.6";
+    public static final String BEAGLE_VERSION = "beagle.18May20.d20.jar";
+    public static final String EAGLE_VERSION = "eagle-2.4";
+    private String minimacCommand;
+    private String minimacParams;
+    private String eagleCommand;
+    private String eagleParams;
+    private String beagleCommand;
+    private String beagleParams;
+    private String tabixCommand;
+    private int minimacWindow;
+    private int minimacDecay;
+    private int phasingWindow;
+    private double minR2;
+    private String refFilename;
+    private String mapMinimac;
     
-	private int minimac4Threads;
+    private int eagleThreads;
+    private int minimac4Threads;
+    private int minimac4_temp_buffer;
+    private String minimac4_temp_prefix;
     
-	private String mapEagleFilename = "";
+    private String mapEagleFilename = "";
+    private String refEagleFilename = "";
+    private String refBeagleFilename = "";
+    private String mapBeagleFilename = "";
+    private String includeScoreFilename = null;
+    private String build = "hg19";
+    private boolean phasingOnly;
+    private String phasingEngine = "";
+    private String scores;
 
-	private String refEagleFilename = "";
-
-	private String refBeagleFilename = "";
-
-	private String mapBeagleFilename = "";
-
-	private String includeScoreFilename = null;
-
-	private String build = "hg19";
-
-	private boolean phasingOnly;
-
-	private String phasingEngine = "";
-
-	private String scores;
-
-	private ImputationStatistic statistic = new ImputationStatistic();
-
-	private SimpleTemplateEngine engine = new SimpleTemplateEngine();
+    private ImputationStatistic statistic = new ImputationStatistic();
+    private SimpleTemplateEngine engine = new SimpleTemplateEngine();
 
     public boolean execute(VcfChunk chunk, VcfChunkOutput output,Log log) throws InterruptedException, IOException {
 	log.info("Starting pipeline for chunk " + chunk + " [Phased: " + chunk.isPhased() + "]");
@@ -354,8 +329,12 @@ public class ImputationPipeline {
 		binding.put("mapMinimac", mapMinimac);
 		binding.put("minR2", minR2);
 		binding.put("decay", minimacDecay);
-		// add minimac_threads to binding -----------------------
+		// add minimac_threads to binding ---------------------
 		binding.put("minimac_threads",minimac4Threads);
+		// ----------------------------------------------------
+		// add minimac temp buffer/prefix to binding ----------
+		binding.put("minimac_temp_prefix",minimac4_temp_prefix);
+		binding.put("minimac_temp_buffer",minimac4_temp_buffer);
 		// ----------------------------------------------------
 
 		String[] params = createParams(minimacParams, binding);
@@ -486,6 +465,14 @@ public class ImputationPipeline {
 
 	public void setMinimac4Threads(int n) {
 		this.minimac4Threads=n;
+	}
+    
+	public void setMinimac4TempBuffer(int n) {
+		this.minimac4_temp_buffer=n;
+	}
+
+	public void setMinimac4TempPrefix(String p) {
+		this.minimac4_temp_prefix=p;
 	}
 
 	public void setBuild(String build) {
