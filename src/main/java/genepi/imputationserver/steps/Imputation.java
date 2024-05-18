@@ -86,6 +86,14 @@ public class Imputation extends ParallelHadoopJobStep {
 		    log.info("minimac4.threads is not in job.config; using default: 1");
 		}
 		log.info("minimac_t: "+minimac_t);
+		int big_job_size=1000000; // so that all jobs use small_job_queue
+		if (store_jc.getKeys().contains("big.job.size")){
+		    big_job_size=Integer.parseInt(store_jc.getString("big.job.size"));
+		}
+		else{
+		    log.info("big.job.size is not in job.config; using default: "+big_job_size);
+		}
+		log.info("big_job_size: "+big_job_size);
 		
 		// inputs
 		String input = context.get("chunkFileDir");
@@ -287,6 +295,15 @@ public class Imputation extends ParallelHadoopJobStep {
 					}
 					job.setScores(pgsPanel.getScores());
 				}
+
+				context.println("Imputation: #samples: "+result.samples);
+				if (result.samples>=big_job_size){
+				    job.set("mapreduce.job.queuename","big_job_queue");
+				}
+				else{
+				    job.set("mapreduce.job.queuename","small_job_queue");
+				}
+
 				job.setRefPanel(reference);
 				job.setLogFilename(FileUtil.path(log, "chr_" + chr + ".log"));
 				job.setJarByClass(ImputationJob.class);
@@ -516,11 +533,11 @@ public class Imputation extends ParallelHadoopJobStep {
 
 	}
 
-	class ChunkFileConverterResult {
-		public String filename;
-
-		public boolean needsPhasing;
-	}
+    class ChunkFileConverterResult {
+	public String filename;
+	public boolean needsPhasing;
+	public int samples;
+    }
 
 	private ChunkFileConverterResult convertChunkfile(String chunkFile, String output) throws IOException {
 
@@ -531,11 +548,13 @@ public class Imputation extends ParallelHadoopJobStep {
 		HdfsLineWriter writer = new HdfsLineWriter(newChunkFile);
 
 		boolean phased = true;
+		int samples=0;
 
 		while (reader.next()) {
 			VcfChunk chunk = new VcfChunk(reader.get());
 
 			phased = phased && chunk.isPhased();
+			samples=chunk.getSamples();
 
 			// put vcf file
 			String sourceVcf = chunk.getVcfFilename();
@@ -552,6 +571,8 @@ public class Imputation extends ParallelHadoopJobStep {
 		ChunkFileConverterResult result = new ChunkFileConverterResult();
 		result.filename = newChunkFile;
 		result.needsPhasing = !phased;
+		result.samples=samples;
+		
 		return result;
 
 	}

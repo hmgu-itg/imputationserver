@@ -79,7 +79,6 @@ public class ImputationJob extends HadoopJob {
 		// set values times 5 due to timeout of setup
 		set("mapred.tasktracker.expiry.interval", "3000000");
 		set("mapred.healthChecker.script.timeout", "3000000");
-
 	}
 
 	@Override
