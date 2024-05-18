@@ -11,7 +11,7 @@ public class VcfChunk {
     private DecimalFormat nf = new DecimalFormat("#0000000000");
     private int snps = 0;
     private int inReference = 0;
-    private int samples;
+    private int samples=0;
 	
     public VcfChunk() {}
 
