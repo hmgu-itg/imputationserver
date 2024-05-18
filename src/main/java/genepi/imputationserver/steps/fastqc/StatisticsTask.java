@@ -297,6 +297,7 @@ public class StatisticsTask implements ITask {
 		chunk.setEnd(chunkEnd);
 		chunk.setVcfFilename(chunkName);
 		chunk.setPhased(phased);
+		chunk.setSamples(samples);
 
 		chunk.snpsPerSampleCount = new int[samples];
 		for (int i = 0; i < samples; i++) {
