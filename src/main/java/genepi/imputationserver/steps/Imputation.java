@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 
 import cloudgene.sdk.internal.WorkflowContext;
 import genepi.hadoop.HadoopJob;
@@ -296,13 +297,29 @@ public class Imputation extends ParallelHadoopJobStep {
 					job.setScores(pgsPanel.getScores());
 				}
 
+				// queues
 				context.println("Imputation: #samples: "+result.samples);
-				if (result.samples>=big_job_size){
-				    job.set("mapreduce.job.queuename","big_job_queue");
+				String queues=job.getConfiguration().get("yarn.scheduler.capacity.root.queues");
+				context.println("available queues: "+queues);
+				if (queues!=null){
+				    String [] strq=queues.split(",");
+				    if (Arrays.asList(strq).contains("small_job_queue") && Arrays.asList(strq).contains("big_job_queue")){
+					if (result.samples>=big_job_size){
+					    context.println("adding job to the big_job_queue");
+					    job.set("mapreduce.job.queuename","big_job_queue");
+					}
+					else{
+					    context.println("adding job to the small_job_queue");
+					    job.set("mapreduce.job.queuename","small_job_queue");
+					}
+				    }
+				    else{
+					context.println("WARN: small_job_queue, big_job_queue not available");
+				    }
+				}else{
+				    context.println("WARN: could not determine any Hadoop queues");
 				}
-				else{
-				    job.set("mapreduce.job.queuename","small_job_queue");
-				}
+				// *************
 
 				job.setRefPanel(reference);
 				job.setLogFilename(FileUtil.path(log, "chr_" + chr + ".log"));
