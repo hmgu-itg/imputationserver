@@ -695,7 +695,7 @@ public class StatisticsTask implements ITask {
 			    }
 			}
 			else {
-			    writer_par1.write(String.join("\t",tiles));
+			    writer_par2.write(String.join("\t",tiles));
 			    if (!paths.contains(par2)) {
 				paths.add(par2);
 			    }
