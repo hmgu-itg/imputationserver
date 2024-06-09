@@ -251,12 +251,12 @@ public class CompressionEncryption extends WorkflowStep {
 		ZipParameters param = new ZipParameters();
 		param.setEncryptFiles(true);
 		param.setEncryptionMethod(EncryptionMethod.ZIP_STANDARD);
+		param.setCompressionMethod(CompressionMethod.STORE);
+		param.setCompressionLevel(CompressionLevel.NORMAL);
 
 		if (aesEncryption) {
 			param.setEncryptionMethod(EncryptionMethod.AES);
 			param.setAesKeyStrength(AesKeyStrength.KEY_STRENGTH_256);
-			param.setCompressionMethod(CompressionMethod.DEFLATE);
-			param.setCompressionLevel(CompressionLevel.NORMAL);
 		}
 
 		ZipFile zipFile = new ZipFile(file, password.toCharArray());
