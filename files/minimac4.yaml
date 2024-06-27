@@ -29,7 +29,7 @@ workflow:
       generates: $mafFile $chunkFileDir $statisticDir
 
 
-#if( $population != "mixed")
+#if( $population != "skip")
 
     - name: Quality Control (Report)
       type: rmd_docker
