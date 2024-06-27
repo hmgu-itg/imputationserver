@@ -325,8 +325,8 @@ public class Imputation extends ParallelHadoopJobStep {
 				String text = updateMessage();
 				context.endTask(text, WorkflowContext.ERROR);
 
-				downloadLogs();
-				printSummary();
+				//downloadLogs();
+				//printSummary();
 
 				context.error("Imputation on chromosome " + errorChr + " failed. Imputation was stopped.");
 				return false;
@@ -353,8 +353,8 @@ public class Imputation extends ParallelHadoopJobStep {
 			// everything fine
 
 			updateProgress();
-			downloadLogs();
-			printSummary();
+			//downloadLogs();
+			//printSummary();
 
 			String text = updateMessage();
 			context.endTask(text, ok ? WorkflowContext.OK : WorkflowContext.ERROR);
@@ -366,8 +366,8 @@ public class Imputation extends ParallelHadoopJobStep {
 			// unexpected exception
 
 			updateProgress();
-			downloadLogs();
-			printSummary();
+			//downloadLogs();
+			//printSummary();
 			e.printStackTrace();
 			context.updateTask(e.getMessage(), WorkflowContext.ERROR);
 			return false;
@@ -379,7 +379,7 @@ public class Imputation extends ParallelHadoopJobStep {
     private void downloadLogs(){
 	String output=context.get("outputimputation");
 	String logDir=context.get("hadooplogs");
-		
+
 	context.println("output: "+output);
 	context.println("log dir: "+logDir);
 
@@ -389,31 +389,27 @@ public class Imputation extends ParallelHadoopJobStep {
 		context.println("folder: "+f);
 		List<String> L=HdfsUtil.getFiles(f,".out");
 		for (String s:L){
-		    context.println("file: "+s);
 		    if (HdfsUtil.exists(s)){
-			context.println("File "+s+" exists");
-			HdfsUtil.put(s,FileUtil.path(logDir,FileUtil.getFilename(s)));
+			context.println("src: "+s);
+			HdfsUtil.exportFile(logDir,s);
 		    }
 		    else
 			context.println("File "+s+" does not exist");
 		}
 		L=HdfsUtil.getFiles(f,".err");
 		for (String s:L){
-		    context.println("file: "+s);
 		    if (HdfsUtil.exists(s)){
-			context.println("File "+s+" exists");
-			HdfsUtil.put(s,FileUtil.path(logDir,FileUtil.getFilename(s)));
+			context.println("src: "+s);
+			HdfsUtil.exportFile(logDir,s);
 		    }
 		    else
 			context.println("File "+s+" does not exist");
-		    //		    HdfsUtil.put(s,logDir);
 		}
 	    }
 	}catch (IOException e) {
 	    context.println("getDirectories: " + e.getMessage());
 	    return;
 	}
-	//ImputationResults imputationResults = new ImputationResults(folders, phasingOnly);
     }
     
 	// print summary and download log files from tasktracker
@@ -534,6 +530,7 @@ public class Imputation extends ParallelHadoopJobStep {
 	protected synchronized void onJobFinish(String id, boolean successful, WorkflowContext context) {
 
 		HadoopJob job = jobs.get(id);
+		downloadLogs();
 
 		if (successful) {
 
