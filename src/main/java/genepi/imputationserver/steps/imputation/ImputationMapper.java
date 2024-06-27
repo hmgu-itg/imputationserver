@@ -327,16 +327,14 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 				return;
 			}
 
-			if (workspace!=null && jobId!=null){
-			    String localLogDir = FileUtil.path(workspace,jobId,"logfile");
-			    log.info("log dir: "+localLogDir);
-			    log.info("copying Eagle out/err files for chunk "+chunk+" to "+localLogDir);
-			    FileUtil.copy(outputChunk.getEagleOutFilename(), FileUtil.path(localLogDir, chunk + ".eagle.out"));
-			    FileUtil.copy(outputChunk.getEagleErrFilename(), FileUtil.path(localLogDir, chunk + ".eagle.err"));
-			    log.info("copying Minimac out/err files for chunk "+chunk+" to "+localLogDir);
-			    FileUtil.copy(outputChunk.getMinimacOutFilename(), FileUtil.path(localLogDir, chunk + ".minimac.out"));
-			    FileUtil.copy(outputChunk.getMinimacErrFilename(), FileUtil.path(localLogDir, chunk + ".minimac.err"));
-			}
+			log.info("copying "+outputChunk.getEagleOutFilename()+" to "+output);
+			HdfsUtil.put(outputChunk.getEagleOutFilename(), HdfsUtil.path(output, chunk + ".eagle.out"));
+			log.info("copying "+outputChunk.getEagleErrFilename()+" to "+output);
+			HdfsUtil.put(outputChunk.getEagleErrFilename(), HdfsUtil.path(output, chunk + ".eagle.err"));
+			log.info("copying "+outputChunk.getMinimacOutFilename()+" to "+output);
+			HdfsUtil.put(outputChunk.getMinimacOutFilename(), HdfsUtil.path(output, chunk + ".minimac.out"));
+			log.info("copying "+outputChunk.getMinimacErrFilename()+" to "+output);
+			HdfsUtil.put(outputChunk.getMinimacErrFilename(), HdfsUtil.path(output, chunk + ".minimac.err"));
 
 			if (phasingOnly) {
 
