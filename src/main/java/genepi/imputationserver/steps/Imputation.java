@@ -71,22 +71,6 @@ public class Imputation extends ParallelHadoopJobStep {
 
 		}
 
-		int eagle_t=1; // default
-		if (store_jc.getKeys().contains("eagle.threads")){
-		    eagle_t=Integer.parseInt(store_jc.getString("eagle.threads"));
-		}
-		else{
-		    log.info("eagle.threads is not in job.config; using default: 1");
-		}
-		log.info("eagle_t: "+eagle_t);
-		int minimac_t=1; // default
-		if (store_jc.getKeys().contains("minimac4.threads")){
-		    minimac_t=Integer.parseInt(store_jc.getString("minimac4.threads"));
-		}
-		else{
-		    log.info("minimac4.threads is not in job.config; using default: 1");
-		}
-		log.info("minimac_t: "+minimac_t);
 		int big_job_size=1000000; // so that all jobs use small_job_queue
 		if (store_jc.getKeys().contains("big.job.size")){
 		    big_job_size=Integer.parseInt(store_jc.getString("big.job.size"));
@@ -235,8 +219,6 @@ public class Imputation extends ParallelHadoopJobStep {
 				String hdfsFilenameChromosome = resolvePattern(panel.getHdfs(), chr);
 				job.setRefPanelHdfs(hdfsFilenameChromosome);
 
-				job.setEagleThreads(eagle_t);
-				job.setMinimac4Threads(minimac_t);
 				job.setR2Filter(r2Filter);
 				job.setBuild(panel.getBuild());
 				if (panel.getMapMinimac() != null) {
