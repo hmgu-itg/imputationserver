@@ -24,6 +24,9 @@ import genepi.io.FileUtil;
 import genepi.io.text.LineReader;
 import genepi.io.text.LineWriter;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 	private ImputationPipeline pipeline;
@@ -62,6 +65,9 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 	private String refEagleIndexFilename;
 
+    private String workspace;
+    private String jobId;
+
 	private boolean debugging;
 
 	private Log log;
@@ -73,14 +79,23 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		HdfsUtil.setDefaultConfiguration(context.getConfiguration());
 
 		log = new Log(context);
-		
-		// Iterator<Map.Entry<String, String>> iter = context.getConfiguration().iterator();
-		// log.info("\nOUTPUT CONFIG\n");
-		// while (iter.hasNext()) {
-		//     Map.Entry<String, String> e = iter.next();
-		//     log.info("CONFIG: "+e.getKey() +":" + e.getValue());
-		// }
-		// log.info("\nEND CONFIG\n");
+
+		jobId=null;
+		Iterator<Map.Entry<String, String>> iter = context.getConfiguration().iterator();
+		//log.info("\nOUTPUT CONFIG\n");
+		while (iter.hasNext()) {
+		    Map.Entry<String, String> e = iter.next();
+		    //log.info("CONFIG: "+e.getKey() +":" + e.getValue());
+		    if (e.getKey().equals("mapreduce.job.name")){
+			String x=e.getValue();
+			Pattern r=Pattern.compile("(job.*)-chr-.*");
+			Matcher m=r.matcher(x);
+			if (m.find()){
+			    jobId=m.group(1);
+			}
+		    }
+		}
+		//log.info("\nEND CONFIG\n");
 		
 		// get parameters
 		ParameterStore parameters = new ParameterStore(context);
@@ -173,6 +188,7 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		for (Object s: store.getKeys()){
 		    log.info("store: "+s.toString()+"="+store.getString(s.toString()));
 		}
+		workspace=store.getString("workspace");
 		String mm4_tmp=store.getString("minimac.tmp");
 		log.info("minimac.tmp from the DefaultPreferenceStore: "+mm4_tmp);
 		String task_attempt_id=context.getTaskAttemptID().toString();
@@ -256,19 +272,20 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		pipeline.setMinR2(minR2);
 		pipeline.setDecay(decay);
 
-		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
-		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
+		pipeline.setEagleThreads(Integer.parseInt(store.getString("eagle.threads")));
+		pipeline.setMinimac4Threads(Integer.parseInt(store.getString("minimac4.threads")));
 		pipeline.setMinimac4TempBuffer(mm4_temp_buffer);
 		String mm4_prefix=FileUtil.path(folder,"mm4_temp_");
 		log.info("Minimac temp prefix: "+mm4_prefix);
+		log.info("output: "+output);
 		pipeline.setMinimac4TempPrefix(mm4_prefix);
 	}
 
 	@Override
 	protected void cleanup(Context context) throws IOException, InterruptedException {
 		// delete temp directory
-		FileUtil.deleteDirectory(folder);
-		log.info("Deleting temp folder "+folder);
+		//FileUtil.deleteDirectory(folder);
+		log.info("Keeping temp folder "+folder);
 		log.close();
 	}
 
@@ -308,6 +325,17 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 			    log.info("PHASING/IMPUTATION FAILED");
 				log.stop("Phasing/Imputation failed!", "");
 				return;
+			}
+
+			if (workspace!=null && jobId!=null){
+			    String localLogDir = FileUtil.path(workspace,jobId,"logfile");
+			    log.info("log dir: "+localLogDir);
+			    log.info("copying Eagle out/err files for chunk "+chunk+" to "+localLogDir);
+			    FileUtil.copy(outputChunk.getEagleOutFilename(), FileUtil.path(localLogDir, chunk + ".eagle.out"));
+			    FileUtil.copy(outputChunk.getEagleErrFilename(), FileUtil.path(localLogDir, chunk + ".eagle.err"));
+			    log.info("copying Minimac out/err files for chunk "+chunk+" to "+localLogDir);
+			    FileUtil.copy(outputChunk.getMinimacOutFilename(), FileUtil.path(localLogDir, chunk + ".minimac.out"));
+			    FileUtil.copy(outputChunk.getMinimacErrFilename(), FileUtil.path(localLogDir, chunk + ".minimac.err"));
 			}
 
 			if (phasingOnly) {
