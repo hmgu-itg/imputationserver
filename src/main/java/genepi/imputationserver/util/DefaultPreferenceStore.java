@@ -77,6 +77,8 @@ public class DefaultPreferenceStore {
 		defaults.setProperty("minimac.tmp", "/mnt/storage/minimac.tmp");
 		defaults.setProperty("big.job.size", "25000");
 		defaults.setProperty("minimac4.temp.buffer", "1000");
+		defaults.setProperty("eagle.threads", "1");
+		defaults.setProperty("minimac4.threads", "1");
 		defaults.setProperty("minimac4.temp.prefix", "/mnt/storage/minimac.tmp");
 		defaults.setProperty("minimac.command",
 				"--region ${chr}:${start}-${end} --overlap ${window} --output ${prefix}.dose.vcf.gz --output-format vcf.gz --format GT,DS,GP,HDS --min-ratio 0.00001 --decay ${decay} --temp-prefix ${minimac_temp_prefix} --temp-buffer ${minimac_temp_buffer} --all-typed-sites --sites ${prefix}.info --threads ${minimac_threads} --empirical-output ${prefix}.empiricalDose.vcf.gz ${minR2 != 0 ? '--min-r2 ' + minR2 : ''}  ${mapMinimac != null ? '--map ' + mapMinimac : ''} ${ref} ${vcf}");
