@@ -256,8 +256,8 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		pipeline.setMinR2(minR2);
 		pipeline.setDecay(decay);
 
-		pipeline.setEagleThreads(Integer.parseInt(parameters.get(ImputationJob.EAGLE_THREADS)));
-		pipeline.setMinimac4Threads(Integer.parseInt(parameters.get(ImputationJob.MINIMAC4_THREADS)));
+		pipeline.setEagleThreads(Integer.parseInt(store.getString("eagle.threads")));
+		pipeline.setMinimac4Threads(Integer.parseInt(store.getString("minimac4.threads")));
 		pipeline.setMinimac4TempBuffer(mm4_temp_buffer);
 		String mm4_prefix=FileUtil.path(folder,"mm4_temp_");
 		log.info("Minimac temp prefix: "+mm4_prefix);
