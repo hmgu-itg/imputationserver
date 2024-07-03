@@ -9,6 +9,10 @@ public class VcfChunkOutput extends VcfChunk {
 	private String metaVcfFilename;
 	private String phasedVcfFilename;
 	private String scoreFilename;
+	private String eagleOutFilename;
+	private String eagleErrFilename;
+	private String minimacOutFilename;
+	private String minimacErrFilename;
 
 	private String infoFilename;
 
@@ -18,6 +22,10 @@ public class VcfChunkOutput extends VcfChunk {
 		imputedVcfFilename = prefix + ".dose.vcf.gz";
 		metaVcfFilename = prefix + ".empiricalDose.vcf.gz";
 		infoFilename = prefix + ".info";
+		eagleOutFilename = prefix + ".eagle.out";
+		eagleErrFilename = prefix + ".eagle.err";
+		minimacOutFilename = prefix + ".minimac.out";
+		minimacErrFilename = prefix + ".minimac.err";
 		phasedVcfFilename = prefix + ".phased.vcf.gz";
 		scoreFilename = prefix + ".scores.csv";
 
@@ -42,6 +50,22 @@ public class VcfChunkOutput extends VcfChunk {
 
 	public String getInfoFilename() {
 		return infoFilename;
+	}
+
+	public String getEagleOutFilename() {
+		return eagleOutFilename;
+	}
+
+	public String getEagleErrFilename() {
+		return eagleErrFilename;
+	}
+
+	public String getMinimacOutFilename() {
+		return minimacOutFilename;
+	}
+
+	public String getMinimacErrFilename() {
+		return minimacErrFilename;
 	}
 
 	public String getImputedVcfFilename() {
