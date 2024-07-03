@@ -1,6 +1,7 @@
 package genepi.imputationserver.steps;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.collections4.ListUtils;
 
@@ -53,6 +55,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class CompressionEncryption extends WorkflowStep {
 
 	private class BatchRunner implements Callable<String> {
@@ -61,21 +66,23 @@ public class CompressionEncryption extends WorkflowStep {
 		private String tempdir;
 		private String password;
 		private List<String> chroms;
+	    private long split_size;
 
 		public BatchRunner(WorkflowContext context, LineWriter writer, String tempdir, String password,
-				List<String> chroms) {
+				   List<String> chroms,long split_size) {
 			this.context = context;
 			this.writer = writer;
 			this.password = password;
 			this.tempdir = tempdir;
 			this.chroms = chroms;
+			this.split_size=split_size;
 		}
 
 		@Override
 		public String call() throws Exception {
 			List<String> res = new ArrayList<String>();
 			for (String c : chroms) {
-				zipEncryptChr(context, c, writer, password, tempdir);
+			    zipEncryptChr(context, c, writer, password, tempdir,split_size);
 				res.add(c);
 			}
 			return "Chromosome(s) " + String.join(", ", res) + " finished";
@@ -85,6 +92,7 @@ public class CompressionEncryption extends WorkflowStep {
 	@Override
 	public boolean run(WorkflowContext context) {
 		int nthreads = 1; // default
+		long ssz=0L;  // default
 
 		// currently not used
 		//String outputScores = context.get("outputScores");
@@ -94,6 +102,9 @@ public class CompressionEncryption extends WorkflowStep {
 		String output = context.get("outputimputation");
 		String localOutput = context.get("local");
 		String mode = context.get("mode");
+
+		context.log("output: "+output);
+		context.log("localOutput: "+localOutput);
 		
 		String password = context.get("password");
 		if (password == null || (password != null && password.equals("auto"))) {
@@ -112,11 +123,12 @@ public class CompressionEncryption extends WorkflowStep {
 		else
 		    context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 
+		// nthreads
 		if (store.getString("export.threads") != null && !store.getString("export.threads").equals("")) {
 		    try {
 			nthreads = Integer.parseInt(store.getString("export.threads"));
 		    } catch (NumberFormatException e) {
-			e.printStackTrace();
+			context.log(e.getMessage());
 		    }
 		}
 
@@ -124,6 +136,20 @@ public class CompressionEncryption extends WorkflowStep {
 		    context.log("Export: using 1 thread");
 		else
 		    context.log("Export: using up to " + nthreads + " threads");
+
+		// split size
+		if (store.getString("zip.split.size") != null && !store.getString("zip.split.size").equals("")) {
+		    try {
+			ssz=parseSplitSizeString(store.getString("zip.split.size"));
+		    } catch (IllegalArgumentException e) {
+			context.log(e.getMessage());
+		    }
+		}
+
+		if (ssz == 0L)
+		    context.log("Export: not splitting output ZIPs");
+		else
+		    context.log("Export: using split size "+ssz+" bytes");
 
 		try {
 			context.beginTask("Export data ...");
@@ -150,7 +176,7 @@ public class CompressionEncryption extends WorkflowStep {
 			ExecutorService pool = Executors.newFixedThreadPool(chr_batches.size());
 			List<Callable<String>> callables = new ArrayList<Callable<String>>();
 			for (int i = 0; i < chr_batches.size(); i++)
-				callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i)));
+			    callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i),ssz));
 			List<Future<String>> res = pool.invokeAll(callables);
 			for (Future<String> r : res)
 				context.log(r.get());
@@ -246,7 +272,7 @@ public class CompressionEncryption extends WorkflowStep {
 	}
 
 	// NOTE: genepi throws IOException while Andrei throws ZipException
-	public void createEncryptedZipFile(File file, List<File> files, String password, boolean aesEncryption)
+    public void createEncryptedZipFile(File file, List<File> files, String password, boolean aesEncryption,long split_size)
 			throws IOException {
 		ZipParameters param = new ZipParameters();
 		param.setEncryptFiles(true);
@@ -260,22 +286,52 @@ public class CompressionEncryption extends WorkflowStep {
 		}
 
 		ZipFile zipFile = new ZipFile(file, password.toCharArray());
-		zipFile.addFiles(files, param);
+		if (split_size==0L){
+		    zipFile.addFiles(files,param);
+		}
+		else{
+		    zipFile.createSplitZipFile(files,param,true,split_size);
+		}
+		
 		zipFile.close();
 	}
 
-	public void createEncryptedZipFile(File file, File source, String password, boolean aesEncryption)
+    public void createEncryptedZipFile(File file, File source, String password, boolean aesEncryption,long split_size)
 			throws IOException {
 		List<File> files = new Vector<File>();
 		files.add(source);
-		createEncryptedZipFile(file, files, password, aesEncryption);
+		createEncryptedZipFile(file, files, password, aesEncryption,split_size);
 	}
 
+    private long parseSplitSizeString(String str) throws IllegalArgumentException{
+	Pattern pattern = Pattern.compile("^([1-9][0-9]*)([KMG])$");
+	Matcher matcher = pattern.matcher(str);
+	if (matcher.matches()){
+	    long x=Long.parseLong(matcher.group(1),10);
+	    String s=matcher.group(2);
+	    if (s.equals("K")){
+		return 1024L*x;
+	    }
+	    if (s.equals("M")){
+		return 1024L*1024L*x;
+	    }
+	    if (s.equals("G")){
+		return 1024L*1024L*1024L*x;
+	    }
+	}
+	else{
+	    throw new IllegalArgumentException("wrong split size string format");
+	}
+	return 0L;
+    }
+
+    
 	// NOTE: this method only exists in Andrei's version
 	private void zipEncryptChr(WorkflowContext context, String cname, LineWriter writer, String password,
-			String tempdir) throws Exception {
+				   String tempdir,long split_size) throws Exception {
 		String output = context.get("outputimputation");
 		String localOutput = context.get("local");
+		String localLogDir = context.get("logfile");
 		String aesEncryptionValue = context.get("aesEncryption");
 		String meta = context.get("meta");
 		String mode = context.get("mode");
@@ -355,20 +411,28 @@ public class CompressionEncryption extends WorkflowStep {
 		String fileName = "chr_" + cname + ".zip";
 		String filePath = FileUtil.path(localOutput, fileName);
 		File file = new File(filePath);
-		createEncryptedZipFile(file, files, password, aesEncryption);
+		createEncryptedZipFile(file, files, password, aesEncryption,split_size);
 
-		// add checksum to hash file
-		synchronized (this) {
-			context.log("Creating file checksum for " + filePath);
-		}
-		long checksumStart = System.currentTimeMillis();
-		String checksum = FileChecksum.HashFile(new File(filePath), FileChecksum.Algorithm.MD5);
-		synchronized (this) {
-			writer.write(checksum + " " + fileName);
-		}
-		long checksumEnd = (System.currentTimeMillis() - checksumStart) / 1000;
-		synchronized (this) {
-			context.log("File checksum for " + filePath + " created in " + checksumEnd + " seconds.");
+		File D=new File(localOutput);
+		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
+		File flist [] = D.listFiles(fileFilter); // all parts of ZIP split
+		
+		for (File F:flist){
+		    // add checksum to hash file
+		    synchronized (this) {
+			context.log("Creating file checksum for " + F.getName());
+		    }
+		    long checksumStart = System.currentTimeMillis();
+		    //String checksum = FileChecksum.HashFile(new File(filePath), FileChecksum.Algorithm.MD5);
+		    String checksum = FileChecksum.HashFile(F, FileChecksum.Algorithm.MD5);
+		    synchronized (this) {
+			writer.write(checksum + " " + F.getName());
+		    }
+		    long checksumEnd = (System.currentTimeMillis() - checksumStart) / 1000;
+		    synchronized (this) {
+			//context.log("File checksum for " + filePath + " created in " + checksumEnd + " seconds.");
+			context.log("File checksum for " + F.getName() + " created in " + checksumEnd + " seconds.");
+		    }
 		}
 
 		IExternalWorkspace externalWorkspace = context.getExternalWorkspace();

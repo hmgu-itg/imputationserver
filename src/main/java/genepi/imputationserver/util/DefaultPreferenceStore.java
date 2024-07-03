@@ -76,6 +76,8 @@ public class DefaultPreferenceStore {
 		defaults.setProperty("server.url", "https://imputationserver.helmholtz-munich.de");
 		defaults.setProperty("minimac.tmp", "/mnt/storage/minimac.tmp");
 		defaults.setProperty("big.job.size", "25000");
+		defaults.setProperty("eagle.threads", "1");
+		defaults.setProperty("minimac4.threads", "1");
 		defaults.setProperty("minimac4.temp.buffer", "1000");
 		defaults.setProperty("minimac4.temp.prefix", "/mnt/storage/minimac.tmp");
 		defaults.setProperty("minimac.command",

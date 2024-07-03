@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
+import java.util.List;
 
 import cloudgene.sdk.internal.WorkflowContext;
 import genepi.hadoop.HadoopJob;
@@ -71,22 +72,6 @@ public class Imputation extends ParallelHadoopJobStep {
 
 		}
 
-		int eagle_t=1; // default
-		if (store_jc.getKeys().contains("eagle.threads")){
-		    eagle_t=Integer.parseInt(store_jc.getString("eagle.threads"));
-		}
-		else{
-		    log.info("eagle.threads is not in job.config; using default: 1");
-		}
-		log.info("eagle_t: "+eagle_t);
-		int minimac_t=1; // default
-		if (store_jc.getKeys().contains("minimac4.threads")){
-		    minimac_t=Integer.parseInt(store_jc.getString("minimac4.threads"));
-		}
-		else{
-		    log.info("minimac4.threads is not in job.config; using default: 1");
-		}
-		log.info("minimac_t: "+minimac_t);
 		int big_job_size=1000000; // so that all jobs use small_job_queue
 		if (store_jc.getKeys().contains("big.job.size")){
 		    big_job_size=Integer.parseInt(store_jc.getString("big.job.size"));
@@ -235,8 +220,6 @@ public class Imputation extends ParallelHadoopJobStep {
 				String hdfsFilenameChromosome = resolvePattern(panel.getHdfs(), chr);
 				job.setRefPanelHdfs(hdfsFilenameChromosome);
 
-				job.setEagleThreads(eagle_t);
-				job.setMinimac4Threads(minimac_t);
 				job.setR2Filter(r2Filter);
 				job.setBuild(panel.getBuild());
 				if (panel.getMapMinimac() != null) {
@@ -342,7 +325,8 @@ public class Imputation extends ParallelHadoopJobStep {
 				String text = updateMessage();
 				context.endTask(text, WorkflowContext.ERROR);
 
-				printSummary();
+				//downloadLogs();
+				//printSummary();
 
 				context.error("Imputation on chromosome " + errorChr + " failed. Imputation was stopped.");
 				return false;
@@ -369,7 +353,8 @@ public class Imputation extends ParallelHadoopJobStep {
 			// everything fine
 
 			updateProgress();
-			printSummary();
+			//downloadLogs();
+			//printSummary();
 
 			String text = updateMessage();
 			context.endTask(text, ok ? WorkflowContext.OK : WorkflowContext.ERROR);
@@ -381,7 +366,8 @@ public class Imputation extends ParallelHadoopJobStep {
 			// unexpected exception
 
 			updateProgress();
-			printSummary();
+			//downloadLogs();
+			//printSummary();
 			e.printStackTrace();
 			context.updateTask(e.getMessage(), WorkflowContext.ERROR);
 			return false;
@@ -390,11 +376,48 @@ public class Imputation extends ParallelHadoopJobStep {
 
 	}
 
+    private void downloadLogs(){
+	String output=context.get("outputimputation");
+	String logDir=context.get("hadooplogs");
+
+	context.println("output: "+output);
+	context.println("log dir: "+logDir);
+
+	try{
+	    List<String> folders=HdfsUtil.getDirectories(output);
+	    for (String f:folders){
+		context.println("folder: "+f);
+		List<String> L=HdfsUtil.getFiles(f,".out");
+		for (String s:L){
+		    if (HdfsUtil.exists(s)){
+			context.println("src: "+s);
+			HdfsUtil.exportFile(logDir,s);
+		    }
+		    else
+			context.println("File "+s+" does not exist");
+		}
+		L=HdfsUtil.getFiles(f,".err");
+		for (String s:L){
+		    if (HdfsUtil.exists(s)){
+			context.println("src: "+s);
+			HdfsUtil.exportFile(logDir,s);
+		    }
+		    else
+			context.println("File "+s+" does not exist");
+		}
+	    }
+	}catch (IOException e) {
+	    context.println("getDirectories: " + e.getMessage());
+	    return;
+	}
+    }
+    
 	// print summary and download log files from tasktracker
 
 	private void printSummary() {
 		context.println("Summary: ");
 		String log = context.get("hadooplogs");
+		context.println("log: "+log);
 
 		for (String id : jobs.keySet()) {
 
@@ -507,6 +530,7 @@ public class Imputation extends ParallelHadoopJobStep {
 	protected synchronized void onJobFinish(String id, boolean successful, WorkflowContext context) {
 
 		HadoopJob job = jobs.get(id);
+		downloadLogs();
 
 		if (successful) {
 
