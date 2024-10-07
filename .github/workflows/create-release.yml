@@ -16,7 +16,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Build MIS
+    - name: Build HMIS
       run: mvn -Dtest=AllTestsNoChrX install
     - uses: ncipollo/release-action@v1
       with:
