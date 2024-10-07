@@ -31,7 +31,7 @@ public class FailureNotification extends WorkflowStep {
 			notification = store.getString("minimac.sendmail");
 		}
 
-		String serverUrl = "https://imputationserver.sph.umich.edu";
+		String serverUrl = "https://imputationserver.helmholtz-munich.de";
 		if (store.getString("server.url") != null && !store.getString("server.url").isEmpty()) {
 			serverUrl = store.getString("server.url");
 		}
