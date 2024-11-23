@@ -105,12 +105,20 @@ public class FastQualityControl extends WorkflowStep {
 		Arrays.sort(vcfFilenames);
 
 		LineWriter excludedSnpsWriter = null;
-
 		String excludedSnpsFile = FileUtil.path(statDir, "snps-excluded.txt");
-
 		try {
 			excludedSnpsWriter = new LineWriter(excludedSnpsFile);
 			excludedSnpsWriter.write("#Position" + "\t" + "FilterType" + "\t" + " Info", false);
+		} catch (Exception e) {
+			context.error("Error creating file writer");
+			return false;
+		}
+
+		LineWriter alleleSwitchWriter = null;
+		String alleleSwitchFile = FileUtil.path(statDir, "snps-alleleswitch.txt");
+		try {
+			alleleSwitchWriter = new LineWriter(alleleSwitchFile);
+			// alleleSwitchWriter.write("#Position" + "\t" + "FilterType" + "\t" + " Info", false);
 		} catch (Exception e) {
 			context.error("Error creating file writer");
 			return false;
@@ -151,6 +159,7 @@ public class FastQualityControl extends WorkflowStep {
 		StatisticsTask task = new StatisticsTask();
 		task.setVcfFilenames(vcfFilenames);
 		task.setExcludedSnpsWriter(excludedSnpsWriter);
+		task.setAlleleSwitchWriter(alleleSwitchWriter);
 		task.setChunkSize(chunkSize);
 		task.setPhasingWindow(phasingWindow);
 		task.setPopulation(population);
@@ -239,13 +248,15 @@ public class FastQualityControl extends WorkflowStep {
 		}
 
 		try {
-
 			excludedSnpsWriter.close();
-
 			if (!excludedSnpsWriter.hasData()) {
 				FileUtil.deleteFile(excludedSnpsFile);
 			}
 
+			alleleSwitchWriter.close();
+			if (!alleleSwitchWriter.hasData()) {
+				FileUtil.deleteFile(alleleSwitchFile);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -293,6 +304,11 @@ public class FastQualityControl extends WorkflowStep {
 		if (task.getFiltered() > 0) {
 			text.append(
 					"See " + context.createLinkToFile("statisticDir", "snps-excluded.txt") + " for details" + "<br>");
+		}
+
+		if (task.getAlleleSwitch() > 0) {
+			text.append("Allele switch: " + formatter.format(task.getAlleleSwitch()) + "<br>");
+			text.append("See " + context.createLinkToFile("statisticDir", "snps-alleleswitch.txt") + " for details" + "<br>");
 		}
 
 		if (task.getNotFoundInLegend() > 0) {

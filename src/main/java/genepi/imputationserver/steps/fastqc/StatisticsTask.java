@@ -55,6 +55,7 @@ public class StatisticsTask implements ITask {
 	private int phasingWindow;
 	private String[] vcfFilenames;
 	private LineWriter excludedSnpsWriter;
+	private LineWriter alleleSwitchWriter;
 	private String legendFile;
 	private int refSamples;
 	private String build;
@@ -150,43 +151,36 @@ public class StatisticsTask implements ITask {
 					_myvcfFile.setChrX(true);
 
 					// chrX
-					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter);
+					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,null);
 				}
 			} else {
 				// chr1-22
-				processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter);
+				processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter);
 
 			}
 		}
 
 		mafWriter.close();
-
 		excludedChunkWriter.close();
-
 		chrXInfoWriter.close();
-
 		typedOnlyWriter.close();
-
+		
 		if (!excludedChunkWriter.hasData()) {
 			FileUtil.deleteFile(excludedChunkFile);
 		}
-
 		if (!chrXInfoWriter.hasData()) {
 			FileUtil.deleteFile(chrXInfoFile);
 		}
-
 		if (!typedOnlyWriter.hasData()) {
 			FileUtil.deleteFile(typedOnleFile);
 		}
 
 		qcObject.setSuccess(true);
-
 		return qcObject;
 
 	}
 
-	public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,
-			LineWriter excludedChunkWriter, LineWriter typedOnlyWriter) throws IOException, InterruptedException {
+	public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,LineWriter excludedChunkWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
 
 		Map<Integer, VcfChunk> chunks = new ConcurrentHashMap<Integer, VcfChunk>();
 
@@ -249,7 +243,7 @@ public class StatisticsTask implements ITask {
 			for (VcfChunk openChunk : chunks.values()) {
 				if (snp.getStart() <= openChunk.getEnd() + phasingWindow) {
 					processLine(snp, refSnp, samples, openChunk.vcfChunkWriter, openChunk, mafWriter,
-							excludedSnpsWriter, typedOnlyWriter);
+						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter);
 				} else {
 					// close open chunks
 					openChunk.vcfChunkWriter.close();
@@ -315,10 +309,7 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter,
-			VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter)
-			throws IOException, InterruptedException {
-
+	private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter, VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
 		if (ranges != null) {
 			
 			boolean inRange = false;
@@ -392,10 +383,10 @@ public class StatisticsTask implements ITask {
 				filtered++;
 				if (snp.getFilters().contains("DUP")) {
 					duplicates++;
-					excludedSnpsWriter.write(snp + "\t" + "Filter Duplicate");
+					excludedSnpsWriter.write(snp + "\t" + "Filter/Duplicate");
 				} else {
 					filterFlag++;
-					excludedSnpsWriter.write(snp + "\t" + "Filter Other");
+					excludedSnpsWriter.write(snp + "\t" + "Filter/Other");
 				}
 			}
 			return;
@@ -482,6 +473,7 @@ public class StatisticsTask implements ITask {
 				if (insideChunk) {
 
 					alleleSwitch++;
+					alleleSwitchWriter.write(snp + "\tInput: " + ref + "/" + alt + "\tReference: " + legendRef + "/" + legendAlt);
 					/*
 					 * logWriter.write("Allele switch" + snp.getID() + "\t" + chr + ":"+
 					 * snp.getStart() + "\t" + "ref: " + legendRef + "/" + legendAlt + "; data: " +
@@ -511,9 +503,7 @@ public class StatisticsTask implements ITask {
 
 					filtered++;
 					strandFlipAndAlleleSwitch++;
-					excludedSnpsWriter.write(
-							snp + "\t" + "Strand flip and Allele switch" + "\t" + "Ref:" + legendRef + "/" + legendAlt);
-
+					excludedSnpsWriter.write(snp + "\t" + "Strand flip and Allele switch" + "\t" + "Ref:" + legendRef + "/" + legendAlt);
 				}
 
 				return;
@@ -526,8 +516,7 @@ public class StatisticsTask implements ITask {
 				if (insideChunk) {
 					alleleMismatch++;
 					filtered++;
-					excludedSnpsWriter
-							.write(snp + "\t" + "Allele mismatch" + "\t" + "Ref:" + legendRef + "/" + legendAlt);
+					excludedSnpsWriter.write(snp + "\t" + "Allele mismatch" + "\t" + "Ref:" + legendRef + "/" + legendAlt);
 				}
 				return;
 			}
@@ -544,7 +533,6 @@ public class StatisticsTask implements ITask {
 			}
 
 			if (insideChunk) {
-
 				// allele-frequency check
 				if (alleleFrequencyCheck && refSnp.hasFrequencies()) {
 					SnpStats statistics = GenomicTools.calculateAlleleFreq(snp, refSnp, refSamples);
@@ -967,6 +955,10 @@ public class StatisticsTask implements ITask {
 
 	public void setExcludedSnpsWriter(LineWriter excludedSnpsWriter) {
 		this.excludedSnpsWriter = excludedSnpsWriter;
+	}
+
+	public void setAlleleSwitchWriter(LineWriter alleleSwitchWriter) {
+		this.alleleSwitchWriter = alleleSwitchWriter;
 	}
 
 	public int getOverallSnps() {
