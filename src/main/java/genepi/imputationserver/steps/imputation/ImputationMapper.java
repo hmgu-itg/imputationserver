@@ -271,9 +271,13 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 	    pipeline.setScores(scores);
 	    pipeline.setIncludeScoreFilename(includeScoresFilename);
 
-	    log.info("EXECUTING PIPELINE");
+	    InetAddress addr = java.net.InetAddress.getLocalHost();
+	    String hostname = addr.getHostName();
+	    
+	    log.info(context.getJobName()+"\t"+hdfsPath+"\t"+hostname+"\t"+chunk);
+	    log.info("EXECUTING PIPELINE on host: "+hostname);
 	    boolean succesful = pipeline.execute(chunk, outputChunk,log);
-	    log.info("DONE EXECUTING PIPELINE, RESULT: "+succesful);
+	    log.info("DONE EXECUTING PIPELINE on host: "+hostname+", RESULT: "+succesful);
 	    ImputationStatistic statistics = pipeline.getStatistic();
 
 	    // in case of failure copy Eagle/Minimac out/err files to HDFS
@@ -343,8 +347,6 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		HdfsUtil.put(outputChunk.getScoreFilename() + ".json",HdfsUtil.path(outputScores, chunk + ".scores.json"));
 	    }
 
-	    InetAddress addr = java.net.InetAddress.getLocalHost();
-	    String hostname = addr.getHostName();
 	    long endTotal = System.currentTimeMillis();
 	    long timeTotal = (endTotal - startTotal) / 1000;
 
