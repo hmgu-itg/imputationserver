@@ -290,28 +290,28 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		if (f.exists()){
 		    log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
-		    HdfsUtil.put(fn,HdfsUtil.path(output,att+"_"+FileUtil.getFilename(fn)));
+		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getEagleErrFilename();
 		f=new File(fn);
 		if (f.exists()){
 		    log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
-		    HdfsUtil.put(fn,HdfsUtil.path(output,att+"_"+FileUtil.getFilename(fn)));
+		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getMinimacOutFilename();
 		f=new File(fn);
 		if (f.exists()){
 		    log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
-		    HdfsUtil.put(fn,HdfsUtil.path(output,att+"_"+FileUtil.getFilename(fn)));
+		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getMinimacErrFilename();
 		f=new File(fn);
 		if (f.exists()){
 		    log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
-		    HdfsUtil.put(fn,HdfsUtil.path(output,att+"_"+FileUtil.getFilename(fn)));
+		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		/*-----*/
 		log.stop("Phasing/Imputation failed!", "");
