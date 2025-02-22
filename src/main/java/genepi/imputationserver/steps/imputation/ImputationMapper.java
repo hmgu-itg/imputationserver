@@ -244,8 +244,8 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
 	// delete temp directory
-	log.info("Removing "+folder);
-	FileUtil.deleteDirectory(folder);
+	log.info("NOT Removing "+folder);
+	//FileUtil.deleteDirectory(folder);
 	log.close();
     }
 
