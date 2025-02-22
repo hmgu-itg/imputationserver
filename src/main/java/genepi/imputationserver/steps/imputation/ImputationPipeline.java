@@ -222,6 +222,8 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
+		// add --chrom to binding
+		binding.put("chrom",input.getChromosome());
 		// add eagle_threads to binding -----------------------
 		binding.put("eagle_threads",eagleThreads);
 		// ----------------------------------------------------
