@@ -345,7 +345,9 @@ public class ImputationPipeline {
 		minimac.saveStdOut(output.getPrefix() + ".minimac.out");
 		minimac.saveStdErr(output.getPrefix() + ".minimac.err");
 
-		log.info("Minimac Command: " + minimac.getExecutedCommand());
+		for (String subs: minimac.getExecutedCommand().split("\\s+")){
+		    log.info("Minimac Command: " + subs);
+		}
 		int status = minimac.execute();
 		System.out.println("Minimac return status: " + status);
 
