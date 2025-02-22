@@ -29,7 +29,7 @@ public class ImputationPipeline {
     public static final String PIPELINE_VERSION = "helmholtz-munich-imputationserver-2.1.3";
     public static final String IMPUTATION_VERSION = "minimac-v4.1.6";
     public static final String BEAGLE_VERSION = "beagle.18May20.d20.jar";
-    public static final String EAGLE_VERSION = "eagle-2.4";
+    public static final String EAGLE_VERSION = "eagle-2.4.1";
     private String minimacCommand;
     private String minimacParams;
     private String eagleCommand;
