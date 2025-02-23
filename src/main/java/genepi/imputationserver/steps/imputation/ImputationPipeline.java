@@ -29,7 +29,7 @@ public class ImputationPipeline {
     public static final String PIPELINE_VERSION = "helmholtz-munich-imputationserver-2.1.3";
     public static final String IMPUTATION_VERSION = "minimac-v4.1.6";
     public static final String BEAGLE_VERSION = "beagle.18May20.d20.jar";
-    public static final String EAGLE_VERSION = "eagle-2.4";
+    public static final String EAGLE_VERSION = "eagle-2.4.1";
     private String minimacCommand;
     private String minimacParams;
     private String eagleCommand;
@@ -222,6 +222,9 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
+		log.info("Eagle chromosome: " + input.getChromosome());
+		// add --chrom to binding
+		binding.put("chrom",input.getChromosome());
 		// add eagle_threads to binding -----------------------
 		binding.put("eagle_threads",eagleThreads);
 		// ----------------------------------------------------
@@ -345,7 +348,9 @@ public class ImputationPipeline {
 		minimac.saveStdOut(output.getPrefix() + ".minimac.out");
 		minimac.saveStdErr(output.getPrefix() + ".minimac.err");
 
-		log.info("Minimac Command: " + minimac.getExecutedCommand());
+		for (String subs: minimac.getExecutedCommand().split("\\s+")){
+		    log.info("Minimac Command: " + subs);
+		}
 		int status = minimac.execute();
 		System.out.println("Minimac return status: " + status);
 
