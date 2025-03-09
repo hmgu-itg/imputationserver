@@ -246,15 +246,15 @@ public class StatisticsTask implements ITask {
 			LegendEntry refSnp = legendReader.findByPosition(snp.getStart());
 
 			for (VcfChunk openChunk : chunks.values()) {
-				if (snp.getStart() <= openChunk.getEnd() + phasingWindow) {
-					processLine(snp, refSnp, samples, openChunk.vcfChunkWriter, openChunk, mafWriter,
-						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter,LOG);
-				} else {
-					// close open chunks
-					openChunk.vcfChunkWriter.close();
-					chunkSummary(openChunk, metafileWriter, excludedChunkWriter);
-					chunks.values().remove(openChunk);
-				}
+			    if (snp.getStart() <= openChunk.getEnd() + phasingWindow) {
+				LOG.write("StatisticsTask: processFile: processing "+snp+" chunk="+openChunk.getId());
+				processLine(snp, refSnp, samples, openChunk.vcfChunkWriter, openChunk, mafWriter,excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter,LOG);
+			    } else {
+				// close open chunks
+				openChunk.vcfChunkWriter.close();
+				chunkSummary(openChunk, metafileWriter, excludedChunkWriter);
+				chunks.values().remove(openChunk);
+			    }
 			}
 		} // vcfReader.next()
 		
