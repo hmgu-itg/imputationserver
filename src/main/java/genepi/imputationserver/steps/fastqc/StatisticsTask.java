@@ -104,12 +104,13 @@ public class StatisticsTask implements ITask {
 		// MAF file for QC report
 		LineWriter mafWriter = new LineWriter(mafFile);
 
+		// log
+		LineWriter logWriter = new LineWriter(FileUtil.path(statDir, "statistics.log"));
+
 		// excluded chunks
 		String excludedChunkFile = FileUtil.path(statDir, "chunks-excluded.txt");
 		LineWriter excludedChunkWriter = new LineWriter(excludedChunkFile);
-		excludedChunkWriter.write(
-				"#Chunk" + "\t" + "SNPs (#)" + "\t" + "Reference Overlap (%)" + "\t" + "Low Sample Call Rates (#)",
-				false);
+		excludedChunkWriter.write("#Chunk" + "\t" + "SNPs (#)" + "\t" + "Reference Overlap (%)" + "\t" + "Low Sample Call Rates (#)",false);
 
 		String chrXInfoFile = FileUtil.path(statDir, "chrX-info.txt");
 		LineWriter chrXInfoWriter = new LineWriter(chrXInfoFile);
@@ -121,6 +122,7 @@ public class StatisticsTask implements ITask {
 
 		// chrX haploid samples
 		HashSet<String> hapSamples = new HashSet<String>();
+		logWriter.write("StatisticsTask: run: # VCF files: "+vcfFilenames.length);
 
 		int i = 0;
 		for (String vcfFilename : vcfFilenames) {
@@ -134,6 +136,8 @@ public class StatisticsTask implements ITask {
 			VcfFile myvcfFile = VcfFileUtil.load(vcfFilename, chunkSize, true);
 
 			String chromosome = myvcfFile.getChromosome();
+
+			logWriter.write("StatisticsTask: run: current VCF: "+vcfFilename+" (chromosome: "+chromosome+")");
 
 			if (VcfFileUtil.isChrMT(chromosome)) {
 				myvcfFile.setPhased(true);
@@ -151,12 +155,11 @@ public class StatisticsTask implements ITask {
 					_myvcfFile.setChrX(true);
 
 					// chrX
-					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,null);
+					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,null,logWriter);
 				}
 			} else {
 				// chr1-22
-				processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter);
-
+			    processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter,logWriter);
 			}
 		}
 
@@ -164,6 +167,7 @@ public class StatisticsTask implements ITask {
 		excludedChunkWriter.close();
 		chrXInfoWriter.close();
 		typedOnlyWriter.close();
+		logWriter.close();
 		
 		if (!excludedChunkWriter.hasData()) {
 			FileUtil.deleteFile(excludedChunkFile);
@@ -180,11 +184,11 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,LineWriter excludedChunkWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
-
+    public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,LineWriter excludedChunkWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter,LineWriter LOG) throws IOException, InterruptedException {
+	
 		Map<Integer, VcfChunk> chunks = new ConcurrentHashMap<Integer, VcfChunk>();
-
 		String filename = myvcfFile.getVcfFilename();
+		LOG.write("StatisticsTask: processFile: "+filename);
 
 		FastVCFFileReader vcfReader = new FastVCFFileReader(filename);
 		List<String> header = vcfReader.getFileHeader();
@@ -206,6 +210,7 @@ public class StatisticsTask implements ITask {
 		LegendFileReader legendReader = getReader(myvcfFile.getChromosome());
 
 		int samples = myvcfFile.getNoSamples();
+		LOG.write("StatisticsTask: processFile: samples: "+samples);
 
 		while (vcfReader.next()) {
 			MinimalVariantContext snp = vcfReader.getVariantContext();
@@ -243,7 +248,7 @@ public class StatisticsTask implements ITask {
 			for (VcfChunk openChunk : chunks.values()) {
 				if (snp.getStart() <= openChunk.getEnd() + phasingWindow) {
 					processLine(snp, refSnp, samples, openChunk.vcfChunkWriter, openChunk, mafWriter,
-						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter);
+						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter,LOG);
 				} else {
 					// close open chunks
 					openChunk.vcfChunkWriter.close();
@@ -251,8 +256,8 @@ public class StatisticsTask implements ITask {
 					chunks.values().remove(openChunk);
 				}
 			}
-
-		}
+		} // vcfReader.next()
+		
 		legendReader.close();
 		vcfReader.close();
 
@@ -309,7 +314,7 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter, VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
+    private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter, VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter, LineWriter LOG) throws IOException, InterruptedException {
 		if (ranges != null) {
 			
 			boolean inRange = false;
