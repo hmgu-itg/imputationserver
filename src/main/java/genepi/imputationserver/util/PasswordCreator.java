@@ -7,57 +7,43 @@ import java.util.List;
 import org.apache.commons.lang.RandomStringUtils;
 
 public class PasswordCreator {
+    private static String spec_char_string="#!.,;:_+-%$?~=@";
+    
+    public static String createPassword() {
+	return createPassword(5,5,3,3,3);
+    }
 
-	public static String createPassword() {
-		return createPassword(5, 5, 2, 2, 3);
+    public static String createPassword(int uppercaseLetters, int lowercaseLetters, int numbers, int symbols, int duplicates) {
+	String pwd = null;
+	do {
+	    String ucStr = RandomStringUtils.random(uppercaseLetters, 0, 0, true, false, null, new SecureRandom()).toUpperCase();
+	    String lcStr = RandomStringUtils.random(lowercaseLetters, 0, 0, true, false, null, new SecureRandom()).toLowerCase();
+	    String numStr = RandomStringUtils.random(numbers, 0, 0, false, true, null, new SecureRandom());
+	    String symStr = RandomStringUtils.random(symbols,0,spec_char_string.length(),false,false,spec_char_string.toCharArray(),new SecureRandom());
+	    pwd = shuffleAndCheck(ucStr+lcStr+numStr+symStr,duplicates);
+	} while (pwd == null);
+
+	return pwd;
+    }
+
+    private static String shuffleAndCheck(String input, int duplicates) {
+	List<Character> characters = new ArrayList<Character>();
+	int countDuplicates = 0;
+	for (char c : input.toCharArray()) {
+	    if (characters.contains(c)) {
+		countDuplicates++;
+	    }
+	    characters.add(c);
+	}
+	if (countDuplicates >= duplicates) {
+	    return null;
 	}
 
-	public static String createPassword(int uppercaseLetters, int lowercaseLetters, int numbers, int symbols, int duplicates) {
-
-		String pwd = null;
-
-		do {
-			String upper = RandomStringUtils.random(uppercaseLetters, 0, 0, true, false, null, new SecureRandom())
-					.toUpperCase();
-
-			String lower = RandomStringUtils.random(lowercaseLetters, 0, 0, true, false, null, new SecureRandom())
-					.toLowerCase();
-
-			String number = RandomStringUtils.random(numbers, 0, 0, false, true, null, new SecureRandom());
-
-			String symbol = RandomStringUtils.random(symbols, 35, 125, false, false, null, new SecureRandom());
-			
-			// exclude non password-friendly symbols (quotes, ^, \)
-			symbol = symbol.replaceAll("'", "").replaceAll("\"", "").replaceAll("\\^", "").replaceAll(",", "")
-					.replaceAll((char) 96 + "", "").replaceAll("\\\\", "");
-			
-			pwd = shuffleAndCheck(upper + lower + number + symbol, duplicates);
-
-		} while (pwd == null);
-
-		return pwd;
-
+	StringBuilder pwd = new StringBuilder(input.length());
+	while (characters.size() != 0) {
+	    int randPicker = (int) (Math.random() * characters.size());
+	    pwd.append(characters.remove(randPicker));
 	}
-
-	private static String shuffleAndCheck(String input, int duplicates) {
-		List<Character> characters = new ArrayList<Character>();
-		int countDuplicates = 0;
-		for (char c : input.toCharArray()) {
-			if (characters.contains(c)) {
-				countDuplicates++;
-			}
-			characters.add(c);
-		}
-		if (countDuplicates >= duplicates) {
-			return null;
-		}
-
-		StringBuilder pwd = new StringBuilder(input.length());
-		while (characters.size() != 0) {
-			int randPicker = (int) (Math.random() * characters.size());
-			pwd.append(characters.remove(randPicker));
-		}
-		return pwd.toString();
-	}
-
+	return pwd.toString();
+    }
 }
