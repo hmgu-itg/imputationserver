@@ -7,11 +7,10 @@ import java.util.List;
 import org.apache.commons.lang.RandomStringUtils;
 
 public class PasswordCreator {
-
-    private String spec_char_string="#!.,;:_+-%$?~=@";
-
+    private static String spec_char_string="#!.,;:_+-%$?~=@";
+    
     public static String createPassword() {
-	return createPassword(8,8,4,4,5);
+	return createPassword(5,5,3,3,3);
     }
 
     public static String createPassword(int uppercaseLetters, int lowercaseLetters, int numbers, int symbols, int duplicates) {
