@@ -347,7 +347,7 @@ public class CompressionEncryption extends WorkflowStep {
 		ImputationResults imputationResults = new ImputationResults(HdfsUtil.getDirectories(output), phasingOnly);
 		ImputedChromosome imputedChromosome = imputationResults.getChromosomes().get(cname);
 		synchronized (this) {
-			context.log("Export and merge chromosome " + cname);
+			context.log("Starting exporting and merging chromosome " + cname);
 		}
 
 		// output files
@@ -355,9 +355,14 @@ public class CompressionEncryption extends WorkflowStep {
 
 		// merge info files
 		if (!phasingOnly) {
-			String infoOutput = FileUtil.path(tempdir, "chr" + cname + ".info.gz");
-			FileMerger.mergeAndGzInfo(imputedChromosome.getInfoFiles(), infoOutput);
-			files.add(new File(infoOutput));
+		    context.log("Merging and Gzipping INFO for " + cname);
+		    String infoOutput = FileUtil.path(tempdir, "chr" + cname + ".info.gz");
+		    FileMerger.mergeAndGzInfo(imputedChromosome.getInfoFiles(), infoOutput);
+		    files.add(new File(infoOutput));
+		    synchronized (this) {
+			String checksum = FileChecksum.HashFile(new File(infoOutput), FileChecksum.Algorithm.MD5);
+			context.log("Checksum for "+infoOutput+": "+checksum);
+		    }
 		}
 
 		// merge all dosage files
@@ -367,47 +372,64 @@ public class CompressionEncryption extends WorkflowStep {
 		} else {
 			dosageOutput = FileUtil.path(tempdir, "chr" + cname + ".dose.vcf.gz");
 		}
-		files.add(new File(dosageOutput));
-
 		MergedVcfFile vcfFile = new MergedVcfFile(dosageOutput);
 		vcfFile.addHeader(context, imputedChromosome.getHeaderFiles());
+		synchronized (this) {
+		    context.log("Added header for " + cname);
+		}
 		for (String file : imputedChromosome.getDataFiles()) {
 			synchronized (this) {
-				context.log("Read file " + file);
+				context.log("Adding file " + file + " for " + cname);
 			}
 			vcfFile.addFile(HdfsUtil.open(file));
 			HdfsUtil.delete(file);
 		}
 		vcfFile.close();
-
+		synchronized (this) {
+		    String checksum = FileChecksum.HashFile(new File(dosageOutput), FileChecksum.Algorithm.MD5);
+		    context.log("Checksum for "+dosageOutput+": "+checksum);
+		}
+		files.add(new File(dosageOutput));
+		synchronized (this) {
+		    context.log("Saving DOSE / PHASED for " + cname + " in " + dosageOutput);
+		}
+		
 		// merge all meta files
 		if (mergeMetaFiles) {
 			synchronized (this) {
-				context.log("Merging meta files...");
+				context.log("Merging meta files for "+cname);
 			}
 			String dosageMetaOutput = FileUtil.path(tempdir, "chr" + cname + ".empiricalDose.vcf.gz");
 			MergedVcfFile vcfFileMeta = new MergedVcfFile(dosageMetaOutput);
 			String headerMetaFile = imputedChromosome.getHeaderMetaFiles().get(0);
 			synchronized (this) {
-				context.log("Use header from file " + headerMetaFile);
+				context.log("Using header from file " + headerMetaFile+" for "+cname);
 			}
 			vcfFileMeta.addFile(HdfsUtil.open(headerMetaFile));
 
 			for (String file : imputedChromosome.getDataMetaFiles()) {
 				synchronized (this) {
-					context.log("Read file " + file);
+					context.log("Adding META file " + file+" for "+cname);
 				}
 				vcfFileMeta.addFile(HdfsUtil.open(file));
 				HdfsUtil.delete(file);
 			}
 			vcfFileMeta.close();
 			synchronized (this) {
-				context.log("Meta files merged");
+				context.log("Meta files merged for "+cname);
 			}
 			files.add(new File(dosageMetaOutput));
+			synchronized (this) {
+			    String checksum = FileChecksum.HashFile(new File(dosageMetaOutput), FileChecksum.Algorithm.MD5);
+			    context.log("Checksum for "+dosageMetaOutput+": "+checksum);
+			}
 		}
 
 		// create zip file
+		synchronized (this) {
+		    context.log("Creating ZIP for "+cname);
+		}
+		
 		String fileName = "chr_" + cname + ".zip";
 		String filePath = FileUtil.path(localOutput, fileName);
 		File file = new File(filePath);
