@@ -302,9 +302,12 @@ public class CompressionEncryption extends WorkflowStep {
 	cmd_args.add("/mnt/storage/7z_wrapper.sh");
 	//cmd_args.add("-t7z");
 	//cmd_args.add("-mhe=on");
-	cmd_args.add("-p'"+password+"'");
+	cmd_args.add("-p");
+	cmd_args.add(password);
+	cmd_args.add("-o");
 	cmd_args.add(output_fname);
 	for (String f:fnames){
+	    cmd_args.add("-i");
 	    cmd_args.add(f);
 	}
 	
