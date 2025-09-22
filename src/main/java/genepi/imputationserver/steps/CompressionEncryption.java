@@ -296,6 +296,30 @@ public class CompressionEncryption extends WorkflowStep {
 		zipFile.close();
 	}
 
+    // using external call of 7z to create archive
+    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password) throws IOException {
+	List<String> cmd_args=new ArrayList<String>();
+	cmd_args.add("/mnt/storage/7z_wrapper.sh");
+	//cmd_args.add("-t7z");
+	//cmd_args.add("-mhe=on");
+	cmd_args.add("-p'"+password+"'");
+	cmd_args.add(output_fname);
+	for (String f:fnames){
+	    cmd_args.add(f);
+	}
+	
+	ProcessBuilder builder = new ProcessBuilder(cmd_args);
+	File sink=new File("/dev/null");
+	builder.redirectOutput(sink);
+	builder.redirectError(sink);
+	Process zip7z = builder.start();
+
+	int exitCode = zip7z.waitFor();
+	if (exitCode != 0) {
+	    throw new IOException("Received exit code " + exitCode + " from command " + builder.command());
+	}	
+    }
+
     public void createEncryptedZipFile(File file, File source, String password, boolean aesEncryption,long split_size)
 			throws IOException {
 		List<File> files = new Vector<File>();
@@ -351,14 +375,16 @@ public class CompressionEncryption extends WorkflowStep {
 		}
 
 		// output files
-		ArrayList<File> files = new ArrayList<File>();
+		//ArrayList<File> files = new ArrayList<File>();
+		ArrayList<String> filenames = new ArrayList<String>();
 
 		// merge info files
 		if (!phasingOnly) {
 		    context.log("Merging and Gzipping INFO for " + cname);
 		    String infoOutput = FileUtil.path(tempdir, "chr" + cname + ".info.gz");
 		    FileMerger.mergeAndGzInfo(imputedChromosome.getInfoFiles(), infoOutput);
-		    files.add(new File(infoOutput));
+		    //files.add(new File(infoOutput));
+		    filenames.add(infoOutput);
 		    synchronized (this) {
 			String checksum = FileChecksum.HashFile(new File(infoOutput), FileChecksum.Algorithm.MD5);
 			context.log("Checksum for "+infoOutput+": "+checksum);
@@ -389,7 +415,8 @@ public class CompressionEncryption extends WorkflowStep {
 		    String checksum = FileChecksum.HashFile(new File(dosageOutput), FileChecksum.Algorithm.MD5);
 		    context.log("Checksum for "+dosageOutput+": "+checksum);
 		}
-		files.add(new File(dosageOutput));
+		//files.add(new File(dosageOutput));
+		filenames.add(dosageOutput);
 		synchronized (this) {
 		    context.log("Saving DOSE / PHASED for " + cname + " in " + dosageOutput);
 		}
@@ -418,7 +445,8 @@ public class CompressionEncryption extends WorkflowStep {
 			synchronized (this) {
 				context.log("Meta files merged for "+cname);
 			}
-			files.add(new File(dosageMetaOutput));
+			//files.add(new File(dosageMetaOutput));
+			filenames.add(dosageMetaOutput);
 			synchronized (this) {
 			    String checksum = FileChecksum.HashFile(new File(dosageMetaOutput), FileChecksum.Algorithm.MD5);
 			    context.log("Checksum for "+dosageMetaOutput+": "+checksum);
@@ -430,13 +458,15 @@ public class CompressionEncryption extends WorkflowStep {
 		    context.log("Creating ZIP for "+cname);
 		}
 		
-		String fileName = "chr_" + cname + ".zip";
+		String fileName = "chr_" + cname + ".7z";
 		String filePath = FileUtil.path(localOutput, fileName);
-		File file = new File(filePath);
-		createEncryptedZipFile(file, files, password, aesEncryption,split_size);
+		//File file = new File(filePath);
+		createEncryptedZipFile7z(filePath,filenames,password);
+		//createEncryptedZipFile(file, files, password, aesEncryption,split_size);
 
 		File D=new File(localOutput);
-		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
+		//FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
+		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".7z");
 		File flist [] = D.listFiles(fileFilter); // all parts of ZIP split
 		
 		for (File F:flist){
