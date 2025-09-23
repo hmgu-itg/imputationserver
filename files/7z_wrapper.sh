@@ -7,7 +7,7 @@ CONTAINER_PATH="/home/hdoop/containers/ubuntu_optomics.sif"
 
 function usage () {
     >&2 echo ""
-    >&2 echo "Get all run folder names, output goes to STDOUT"
+    >&2 echo "Archiving wrapper for 7z"
     >&2 echo ""
     >&2 echo "Usage: $0 -p <password> -o <output.7z> -i <input1> -i <input2> ... "
     >&2 echo ""
@@ -48,7 +48,7 @@ fi
 
 # echo $(join_by " " "${infnames[@]}")
 
-"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p\'"${password}"\' "-t7z" "-mhe=on" "${outfname}" $(join_by " " "${infnames[@]}")
+"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p"${password}" "-t7z" "-mhe=on" "${outfname}" $(join_by " " "${infnames[@]}")
 
 exit $?
 
