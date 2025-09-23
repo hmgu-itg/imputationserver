@@ -297,13 +297,11 @@ public class CompressionEncryption extends WorkflowStep {
 	}
 
     // using external call of 7z to create archive
-    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password) throws IOException {
+    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password) throws IOException,InterruptedException {
 	List<String> cmd_args=new ArrayList<String>();
 	cmd_args.add("/mnt/storage/7z_wrapper.sh");
-	//cmd_args.add("-t7z");
-	//cmd_args.add("-mhe=on");
 	cmd_args.add("-p");
-	cmd_args.add(password);
+	cmd_args.add("'"+password+"'");
 	cmd_args.add("-o");
 	cmd_args.add(output_fname);
 	for (String f:fnames){
@@ -492,6 +490,7 @@ public class CompressionEncryption extends WorkflowStep {
 
 		IExternalWorkspace externalWorkspace = context.getExternalWorkspace();
 		if (externalWorkspace != null) {
+		    File file = new File(filePath); 
 			long start = System.currentTimeMillis();
 			synchronized (this) {
 				context.log("External Workspace '" + externalWorkspace.getName() + "' found");
