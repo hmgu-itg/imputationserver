@@ -2,8 +2,8 @@
 
 # 7z archiving wrapper
 
-SINGULARITY_EXE=""
-CONTAINER_PATH=""
+SINGULARITY_EXE="/usr/bin/singularity"
+CONTAINER_PATH="/home/hdoop/containers/ubuntu_optomics.sif"
 
 function usage () {
     >&2 echo ""
