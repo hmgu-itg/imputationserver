@@ -93,7 +93,7 @@ public class CompressionEncryption extends WorkflowStep {
 
 	@Override
 	public boolean run(WorkflowContext context) {
-		int nthreads = 1; // default
+		int nthreads = 2; // default
 		long ssz=0L;  // default
 		int nthreads2=1; // default
 
