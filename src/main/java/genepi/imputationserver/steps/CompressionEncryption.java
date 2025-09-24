@@ -67,22 +67,24 @@ public class CompressionEncryption extends WorkflowStep {
 		private String password;
 		private List<String> chroms;
 	    private long split_size;
+	    private int nthreads2;
 
 		public BatchRunner(WorkflowContext context, LineWriter writer, String tempdir, String password,
-				   List<String> chroms,long split_size) {
+				   List<String> chroms,long split_size,int nthreads2) {
 			this.context = context;
 			this.writer = writer;
 			this.password = password;
 			this.tempdir = tempdir;
 			this.chroms = chroms;
 			this.split_size=split_size;
+			this.nthreads2=nthreads2;
 		}
 
 		@Override
 		public String call() throws Exception {
 			List<String> res = new ArrayList<String>();
 			for (String c : chroms) {
-			    zipEncryptChr(context, c, writer, password, tempdir,split_size);
+			    zipEncryptChr(context, c, writer, password, tempdir,split_size,nthreads2);
 				res.add(c);
 			}
 			return "Chromosome(s) " + String.join(", ", res) + " finished";
@@ -93,6 +95,7 @@ public class CompressionEncryption extends WorkflowStep {
 	public boolean run(WorkflowContext context) {
 		int nthreads = 1; // default
 		long ssz=0L;  // default
+		int nthreads2=1; // default
 
 		// currently not used
 		//String outputScores = context.get("outputScores");
@@ -123,19 +126,19 @@ public class CompressionEncryption extends WorkflowStep {
 		else
 		    context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 
-		// nthreads
+		// nthreads2
 		if (store.getString("export.threads") != null && !store.getString("export.threads").equals("")) {
 		    try {
-			nthreads = Integer.parseInt(store.getString("export.threads"));
+			nthreads2 = Integer.parseInt(store.getString("export.threads"));
 		    } catch (NumberFormatException e) {
 			context.log(e.getMessage());
 		    }
 		}
 
-		if (nthreads == 1)
+		if (nthreads2 == 1)
 		    context.log("Export: using 1 thread");
 		else
-		    context.log("Export: using up to " + nthreads + " threads");
+		    context.log("Export: using " + nthreads2 + " threads");
 
 		// split size
 		if (store.getString("zip.split.size") != null && !store.getString("zip.split.size").equals("")) {
@@ -176,7 +179,7 @@ public class CompressionEncryption extends WorkflowStep {
 			ExecutorService pool = Executors.newFixedThreadPool(chr_batches.size());
 			List<Callable<String>> callables = new ArrayList<Callable<String>>();
 			for (int i = 0; i < chr_batches.size(); i++)
-			    callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i),ssz));
+			    callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i),ssz,nthreads2));
 			List<Future<String>> res = pool.invokeAll(callables);
 			for (Future<String> r : res)
 				context.log(r.get());
@@ -297,11 +300,13 @@ public class CompressionEncryption extends WorkflowStep {
 	}
 
     // using external call of 7z to create archive
-    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password) throws IOException,InterruptedException {
+    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password,int threads) throws IOException,InterruptedException {
 	List<String> cmd_args=new ArrayList<String>();
 	cmd_args.add("/mnt/storage/bin/7z_wrapper.sh");
 	cmd_args.add("-p");
 	cmd_args.add(password);
+	cmd_args.add("-t");
+	cmd_args.add(String.valueOf(threads));	
 	cmd_args.add("-o");
 	cmd_args.add(output_fname);
 	for (String f:fnames){
@@ -353,7 +358,7 @@ public class CompressionEncryption extends WorkflowStep {
     
 	// NOTE: this method only exists in Andrei's version
 	private void zipEncryptChr(WorkflowContext context, String cname, LineWriter writer, String password,
-				   String tempdir,long split_size) throws Exception {
+				   String tempdir,long split_size,int nthreads2) throws Exception {
 		String output = context.get("outputimputation");
 		String localOutput = context.get("local");
 		String localLogDir = context.get("logfile");
@@ -462,7 +467,7 @@ public class CompressionEncryption extends WorkflowStep {
 		String fileName = "chr_" + cname + ".zip";
 		String filePath = FileUtil.path(localOutput, fileName);
 		//File file = new File(filePath);
-		createEncryptedZipFile7z(filePath,filenames,password);
+		createEncryptedZipFile7z(filePath,filenames,password,nthreads2);
 		//createEncryptedZipFile(file, files, password, aesEncryption,split_size);
 
 		File D=new File(localOutput);
