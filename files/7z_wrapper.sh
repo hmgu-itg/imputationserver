@@ -9,7 +9,7 @@ function usage () {
     >&2 echo ""
     >&2 echo "Archiving wrapper for 7z"
     >&2 echo ""
-    >&2 echo "Usage: $0 -p <password> -o <output.7z> -i <input1> -i <input2> ... "
+    >&2 echo "Usage: $0 -p <password> -o <output.7z> -t <threads> -i <input1> -i <input2> ... "
     >&2 echo ""
     exit 0
 }
@@ -20,10 +20,12 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 declare -a infnames
 outfname=""
 password=""
-while getopts "hp:o:i:" opt; do
+threads=1
+while getopts "hp:o:i:t:" opt; do
     case $opt in
 	p)password="$OPTARG";;
 	o)outfname="$OPTARG";;
+	t)threads="$OPTARG";;
 	i)infnames+=("$OPTARG");;
 	h)usage;;
 	*)usage;;
@@ -48,7 +50,7 @@ fi
 
 # echo $(join_by " " "${infnames[@]}")
 
-"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p"${password}" "-tzip" "-mmt=12" "${outfname}" $(join_by " " "${infnames[@]}")
+"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p"${password}" "-tzip" "-mmt=${threads}" "${outfname}" $(join_by " " "${infnames[@]}")
 
 exit $?
 
