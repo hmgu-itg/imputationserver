@@ -459,7 +459,7 @@ public class CompressionEncryption extends WorkflowStep {
 		    context.log("Creating ZIP for "+cname);
 		}
 		
-		String fileName = "chr_" + cname + ".7z";
+		String fileName = "chr_" + cname + ".zip";
 		String filePath = FileUtil.path(localOutput, fileName);
 		//File file = new File(filePath);
 		createEncryptedZipFile7z(filePath,filenames,password);
@@ -467,7 +467,7 @@ public class CompressionEncryption extends WorkflowStep {
 
 		File D=new File(localOutput);
 		//FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
-		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".7z");
+		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".zip");
 		File flist [] = D.listFiles(fileFilter); // all parts of ZIP split
 		
 		for (File F:flist){

@@ -48,7 +48,7 @@ fi
 
 # echo $(join_by " " "${infnames[@]}")
 
-"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p"${password}" "-t7z" "-mhe=on" "${outfname}" $(join_by " " "${infnames[@]}")
+"${SINGULARITY_EXE}" exec -B /mnt/storage -B /home/hdoop/container.home/:/home/hdoop/ -B /tmp:/run/user "${CONTAINER_PATH}" 7z a -p"${password}" "-tzip" "${outfname}" $(join_by " " "${infnames[@]}")
 
 exit $?
 
