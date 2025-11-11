@@ -56,6 +56,7 @@ public class StatisticsTask implements ITask {
 	private String[] vcfFilenames;
 	private LineWriter excludedSnpsWriter;
 	private LineWriter alleleSwitchWriter;
+	private LineWriter logWriter;
 	private String legendFile;
 	private int refSamples;
 	private String build;
@@ -124,6 +125,7 @@ public class StatisticsTask implements ITask {
 
 		int i = 0;
 		for (String vcfFilename : vcfFilenames) {
+		    logWriter.write("current file: "+vcfFilename);
 
 			i++;
 			if (progressListener != null) {
@@ -140,22 +142,25 @@ public class StatisticsTask implements ITask {
 			}
 
 			if (VcfFileUtil.isChrX(chromosome)) {
+			    logWriter.write("chrX detected");
 
 				// split to PAR1, PAR2 and nonPAR
-				List<String> splits = prepareChrX(myvcfFile.getVcfFilename(), myvcfFile.isPhased(), chrXInfoWriter,
-						hapSamples);
-
+				List<String> splits = prepareChrX(myvcfFile.getVcfFilename(), myvcfFile.isPhased(), chrXInfoWriter,hapSamples);
+				logWriter.write("chrX prepared");
 				for (String split : splits) {
+				    logWriter.write("current split: "+split);
 					VcfFile _myvcfFile = VcfFileUtil.load(split, chunkSize, true);
 
 					_myvcfFile.setChrX(true);
 
 					// chrX
-					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,null);
+					logWriter.write("processing split "+split);	
+					processFile(_myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter,logWriter);
+					logWriter.write("processing "+split+" done");	
 				}
 			} else {
 				// chr1-22
-				processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter);
+			    processFile(myvcfFile, mafWriter, excludedSnpsWriter, excludedChunkWriter, typedOnlyWriter,alleleSwitchWriter,logWriter);
 
 			}
 		}
@@ -180,7 +185,7 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,LineWriter excludedChunkWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
+    public void processFile(VcfFile myvcfFile, LineWriter mafWriter, LineWriter excludedSnpsWriter,LineWriter excludedChunkWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter,LineWriter logW) throws IOException, InterruptedException {
 
 		Map<Integer, VcfChunk> chunks = new ConcurrentHashMap<Integer, VcfChunk>();
 
@@ -201,14 +206,17 @@ public class StatisticsTask implements ITask {
 			}
 		}
 
+		logW.write("ProcessFile: contig="+contig);
+		
 		String metafile = FileUtil.path(chunkFileDir, contig);
 		LineWriter metafileWriter = new LineWriter(metafile);
 		LegendFileReader legendReader = getReader(myvcfFile.getChromosome());
 
 		int samples = myvcfFile.getNoSamples();
-
+		logW.write("ProcessFile: samples="+samples);
 		while (vcfReader.next()) {
 			MinimalVariantContext snp = vcfReader.getVariantContext();
+			logW.write("ProcessFile: snp="+snp.toString());
 			int chunkNumber = snp.getStart() / chunkSize;
 			if (snp.getStart() % chunkSize == 0) {
 				chunkNumber = chunkNumber - 1;
@@ -243,7 +251,7 @@ public class StatisticsTask implements ITask {
 			for (VcfChunk openChunk : chunks.values()) {
 				if (snp.getStart() <= openChunk.getEnd() + phasingWindow) {
 					processLine(snp, refSnp, samples, openChunk.vcfChunkWriter, openChunk, mafWriter,
-						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter);
+						    excludedSnpsWriter, typedOnlyWriter,alleleSwitchWriter,logW);
 				} else {
 					// close open chunks
 					openChunk.vcfChunkWriter.close();
@@ -309,7 +317,7 @@ public class StatisticsTask implements ITask {
 
 	}
 
-	private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter, VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter) throws IOException, InterruptedException {
+    private void processLine(MinimalVariantContext snp, LegendEntry refSnp, int samples, BGzipLineWriter vcfWriter, VcfChunk chunk, LineWriter mafWriter, LineWriter excludedSnpsWriter, LineWriter typedOnlyWriter, LineWriter alleleSwitchWriter, LineWriter logW) throws IOException, InterruptedException {
 		if (ranges != null) {
 			
 			boolean inRange = false;
@@ -959,6 +967,10 @@ public class StatisticsTask implements ITask {
 
 	public void setAlleleSwitchWriter(LineWriter alleleSwitchWriter) {
 		this.alleleSwitchWriter = alleleSwitchWriter;
+	}
+
+	public void setLogWriter(LineWriter writer) {
+		this.logWriter = writer;
 	}
 
 	public int getOverallSnps() {
