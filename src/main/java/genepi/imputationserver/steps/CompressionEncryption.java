@@ -67,22 +67,24 @@ public class CompressionEncryption extends WorkflowStep {
 		private String password;
 		private List<String> chroms;
 	    private long split_size;
+	    private int nthreads2;
 
 		public BatchRunner(WorkflowContext context, LineWriter writer, String tempdir, String password,
-				   List<String> chroms,long split_size) {
+				   List<String> chroms,long split_size,int nthreads2) {
 			this.context = context;
 			this.writer = writer;
 			this.password = password;
 			this.tempdir = tempdir;
 			this.chroms = chroms;
 			this.split_size=split_size;
+			this.nthreads2=nthreads2;
 		}
 
 		@Override
 		public String call() throws Exception {
 			List<String> res = new ArrayList<String>();
 			for (String c : chroms) {
-			    zipEncryptChr(context, c, writer, password, tempdir,split_size);
+			    zipEncryptChr(context, c, writer, password, tempdir,split_size,nthreads2);
 				res.add(c);
 			}
 			return "Chromosome(s) " + String.join(", ", res) + " finished";
@@ -91,8 +93,9 @@ public class CompressionEncryption extends WorkflowStep {
 
 	@Override
 	public boolean run(WorkflowContext context) {
-		int nthreads = 1; // default
+		int nthreads = 4; // default
 		long ssz=0L;  // default
+		int nthreads2=1; // default
 
 		// currently not used
 		//String outputScores = context.get("outputScores");
@@ -123,19 +126,19 @@ public class CompressionEncryption extends WorkflowStep {
 		else
 		    context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 
-		// nthreads
+		// nthreads2
 		if (store.getString("export.threads") != null && !store.getString("export.threads").equals("")) {
 		    try {
-			nthreads = Integer.parseInt(store.getString("export.threads"));
+			nthreads2 = Integer.parseInt(store.getString("export.threads"));
 		    } catch (NumberFormatException e) {
 			context.log(e.getMessage());
 		    }
 		}
 
-		if (nthreads == 1)
+		if (nthreads2 == 1)
 		    context.log("Export: using 1 thread");
 		else
-		    context.log("Export: using up to " + nthreads + " threads");
+		    context.log("Export: using " + nthreads2 + " threads");
 
 		// split size
 		if (store.getString("zip.split.size") != null && !store.getString("zip.split.size").equals("")) {
@@ -176,7 +179,7 @@ public class CompressionEncryption extends WorkflowStep {
 			ExecutorService pool = Executors.newFixedThreadPool(chr_batches.size());
 			List<Callable<String>> callables = new ArrayList<Callable<String>>();
 			for (int i = 0; i < chr_batches.size(); i++)
-			    callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i),ssz));
+			    callables.add(new BatchRunner(context, writer, temp, password, chr_batches.get(i),ssz,nthreads2));
 			List<Future<String>> res = pool.invokeAll(callables);
 			for (Future<String> r : res)
 				context.log(r.get());
@@ -296,6 +299,33 @@ public class CompressionEncryption extends WorkflowStep {
 		zipFile.close();
 	}
 
+    // using external call of 7z to create archive
+    public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password,int threads) throws IOException,InterruptedException {
+	List<String> cmd_args=new ArrayList<String>();
+	cmd_args.add("/mnt/storage/bin/7z_wrapper.sh");
+	cmd_args.add("-p");
+	cmd_args.add(password);
+	cmd_args.add("-t");
+	cmd_args.add(String.valueOf(threads));	
+	cmd_args.add("-o");
+	cmd_args.add(output_fname);
+	for (String f:fnames){
+	    cmd_args.add("-i");
+	    cmd_args.add(f);
+	}
+	
+	ProcessBuilder builder = new ProcessBuilder(cmd_args);
+	File sink=new File("/dev/null");
+	builder.redirectOutput(sink);
+	builder.redirectError(sink);
+	Process zip7z = builder.start();
+
+	int exitCode = zip7z.waitFor();
+	if (exitCode != 0) {
+	    throw new IOException("Received exit code " + exitCode + " from command " + builder.command());
+	}	
+    }
+
     public void createEncryptedZipFile(File file, File source, String password, boolean aesEncryption,long split_size)
 			throws IOException {
 		List<File> files = new Vector<File>();
@@ -328,7 +358,7 @@ public class CompressionEncryption extends WorkflowStep {
     
 	// NOTE: this method only exists in Andrei's version
 	private void zipEncryptChr(WorkflowContext context, String cname, LineWriter writer, String password,
-				   String tempdir,long split_size) throws Exception {
+				   String tempdir,long split_size,int nthreads2) throws Exception {
 		String output = context.get("outputimputation");
 		String localOutput = context.get("local");
 		String localLogDir = context.get("logfile");
@@ -347,17 +377,24 @@ public class CompressionEncryption extends WorkflowStep {
 		ImputationResults imputationResults = new ImputationResults(HdfsUtil.getDirectories(output), phasingOnly);
 		ImputedChromosome imputedChromosome = imputationResults.getChromosomes().get(cname);
 		synchronized (this) {
-			context.log("Export and merge chromosome " + cname);
+			context.log("Starting exporting and merging chromosome " + cname);
 		}
 
 		// output files
-		ArrayList<File> files = new ArrayList<File>();
+		//ArrayList<File> files = new ArrayList<File>();
+		ArrayList<String> filenames = new ArrayList<String>();
 
 		// merge info files
 		if (!phasingOnly) {
-			String infoOutput = FileUtil.path(tempdir, "chr" + cname + ".info.gz");
-			FileMerger.mergeAndGzInfo(imputedChromosome.getInfoFiles(), infoOutput);
-			files.add(new File(infoOutput));
+		    context.log("Merging and Gzipping INFO for " + cname);
+		    String infoOutput = FileUtil.path(tempdir, "chr" + cname + ".info.gz");
+		    FileMerger.mergeAndGzInfo(imputedChromosome.getInfoFiles(), infoOutput);
+		    //files.add(new File(infoOutput));
+		    filenames.add(infoOutput);
+		    synchronized (this) {
+			String checksum = FileChecksum.HashFile(new File(infoOutput), FileChecksum.Algorithm.MD5);
+			context.log("Checksum for "+infoOutput+": "+checksum);
+		    }
 		}
 
 		// merge all dosage files
@@ -367,54 +404,75 @@ public class CompressionEncryption extends WorkflowStep {
 		} else {
 			dosageOutput = FileUtil.path(tempdir, "chr" + cname + ".dose.vcf.gz");
 		}
-		files.add(new File(dosageOutput));
-
 		MergedVcfFile vcfFile = new MergedVcfFile(dosageOutput);
 		vcfFile.addHeader(context, imputedChromosome.getHeaderFiles());
+		synchronized (this) {
+		    context.log("Added header for " + cname);
+		}
 		for (String file : imputedChromosome.getDataFiles()) {
 			synchronized (this) {
-				context.log("Read file " + file);
+				context.log("Adding file " + file + " for " + cname);
 			}
 			vcfFile.addFile(HdfsUtil.open(file));
 			HdfsUtil.delete(file);
 		}
 		vcfFile.close();
-
+		synchronized (this) {
+		    String checksum = FileChecksum.HashFile(new File(dosageOutput), FileChecksum.Algorithm.MD5);
+		    context.log("Checksum for "+dosageOutput+": "+checksum);
+		}
+		//files.add(new File(dosageOutput));
+		filenames.add(dosageOutput);
+		synchronized (this) {
+		    context.log("Saving DOSE / PHASED for " + cname + " in " + dosageOutput);
+		}
+		
 		// merge all meta files
 		if (mergeMetaFiles) {
 			synchronized (this) {
-				context.log("Merging meta files...");
+				context.log("Merging meta files for "+cname);
 			}
 			String dosageMetaOutput = FileUtil.path(tempdir, "chr" + cname + ".empiricalDose.vcf.gz");
 			MergedVcfFile vcfFileMeta = new MergedVcfFile(dosageMetaOutput);
 			String headerMetaFile = imputedChromosome.getHeaderMetaFiles().get(0);
 			synchronized (this) {
-				context.log("Use header from file " + headerMetaFile);
+				context.log("Using header from file " + headerMetaFile+" for "+cname);
 			}
 			vcfFileMeta.addFile(HdfsUtil.open(headerMetaFile));
 
 			for (String file : imputedChromosome.getDataMetaFiles()) {
 				synchronized (this) {
-					context.log("Read file " + file);
+					context.log("Adding META file " + file+" for "+cname);
 				}
 				vcfFileMeta.addFile(HdfsUtil.open(file));
 				HdfsUtil.delete(file);
 			}
 			vcfFileMeta.close();
 			synchronized (this) {
-				context.log("Meta files merged");
+				context.log("Meta files merged for "+cname);
 			}
-			files.add(new File(dosageMetaOutput));
+			//files.add(new File(dosageMetaOutput));
+			filenames.add(dosageMetaOutput);
+			synchronized (this) {
+			    String checksum = FileChecksum.HashFile(new File(dosageMetaOutput), FileChecksum.Algorithm.MD5);
+			    context.log("Checksum for "+dosageMetaOutput+": "+checksum);
+			}
 		}
 
 		// create zip file
+		synchronized (this) {
+		    context.log("Creating ZIP for "+cname);
+		}
+		
 		String fileName = "chr_" + cname + ".zip";
 		String filePath = FileUtil.path(localOutput, fileName);
-		File file = new File(filePath);
-		createEncryptedZipFile(file, files, password, aesEncryption,split_size);
+		//File file = new File(filePath);
+		createEncryptedZipFile7z(filePath,filenames,password,nthreads2);
+		//createEncryptedZipFile(file, files, password, aesEncryption,split_size);
 
 		File D=new File(localOutput);
-		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
+		//FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".z*");
+		FileFilter fileFilter = new WildcardFileFilter("chr_"+cname+".zip");
 		File flist [] = D.listFiles(fileFilter); // all parts of ZIP split
 		
 		for (File F:flist){
@@ -437,6 +495,7 @@ public class CompressionEncryption extends WorkflowStep {
 
 		IExternalWorkspace externalWorkspace = context.getExternalWorkspace();
 		if (externalWorkspace != null) {
+		    File file = new File(filePath); 
 			long start = System.currentTimeMillis();
 			synchronized (this) {
 				context.log("External Workspace '" + externalWorkspace.getName() + "' found");
