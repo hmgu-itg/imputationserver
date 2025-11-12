@@ -288,7 +288,6 @@ public class ImputationPipeline {
 		if (beagle_chr.startsWith("chrX.")) {
 		    beagle_chr="chrX";
 		}
-		log.info("Beagle chromosome: " + beagle_chr);
 		binding.put("chrom",beagle_chr);
 		//binding.put("chr", input.getChromosome());
 		binding.put("start", start);
