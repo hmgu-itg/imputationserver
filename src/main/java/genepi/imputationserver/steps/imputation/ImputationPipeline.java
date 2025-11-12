@@ -79,6 +79,7 @@ public class ImputationPipeline {
 		}
 
 		// replace X.nonpar / X.par with X needed by eagle and minimac
+		log.info("chunk chrom: "+chunk.getChromosome());
 		if (chunk.getChromosome().startsWith("X.")) {
 			output.setChromosome("X");
 		}
@@ -222,9 +223,16 @@ public class ImputationPipeline {
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
 		binding.put("start", start);
 		binding.put("end", end);
-		log.info("Eagle chromosome: " + input.getChromosome());
+		String eagle_chr=input.getChromosome();
+		if (eagle_chr.startsWith("X.")) {
+		    eagle_chr="X";
+		}
+		if (eagle_chr.startsWith("chrX.")) {
+		    eagle_chr="chrX";
+		}
+		log.info("Eagle chromosome: " + eagle_chr);
 		// add --chrom to binding
-		binding.put("chrom",input.getChromosome());
+		binding.put("chrom",eagle_chr);
 		// add eagle_threads to binding -----------------------
 		binding.put("eagle_threads",eagleThreads);
 		// ----------------------------------------------------
@@ -273,7 +281,16 @@ public class ImputationPipeline {
 		binding.put("ref", reference);
 		binding.put("vcf", output.getVcfFilename());
 		binding.put("prefix", output.getPrefix() + phasedPrefix);
-		binding.put("chr", input.getChromosome());
+		String beagle_chr=input.getChromosome();
+		if (beagle_chr.startsWith("X.")) {
+		    beagle_chr="X";
+		}
+		if (beagle_chr.startsWith("chrX.")) {
+		    beagle_chr="chrX";
+		}
+		log.info("Beagle chromosome: " + beagle_chr);
+		binding.put("chrom",beagle_chr);
+		//binding.put("chr", input.getChromosome());
 		binding.put("start", start);
 		binding.put("end", end);
 		binding.put("map", mapFilename);
