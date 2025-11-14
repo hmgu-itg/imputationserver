@@ -106,8 +106,8 @@ public class CompressionEncryption extends WorkflowStep {
 		String localOutput = context.get("local");
 		String mode = context.get("mode");
 
-		context.log("output: "+output);
-		context.log("localOutput: "+localOutput);
+		// context.log("output: "+output);
+		// context.log("localOutput: "+localOutput);
 		
 		String password = context.get("password");
 		if (password == null || (password != null && password.equals("auto"))) {
@@ -124,7 +124,8 @@ public class CompressionEncryption extends WorkflowStep {
 		if (jobConfig.exists())
 		    store.load(jobConfig);
 		else
-		    context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
+		    context.log("Configuration file not available. Using default values.");
+		//context.log("Configuration file '" + jobConfig.getAbsolutePath() + "' not available. Using default values.");
 
 		// nthreads2
 		if (store.getString("export.threads") != null && !store.getString("export.threads").equals("")) {
@@ -393,7 +394,7 @@ public class CompressionEncryption extends WorkflowStep {
 		    filenames.add(infoOutput);
 		    synchronized (this) {
 			String checksum = FileChecksum.HashFile(new File(infoOutput), FileChecksum.Algorithm.MD5);
-			context.log("Checksum for "+infoOutput+": "+checksum);
+			//context.log("Checksum for "+infoOutput+": "+checksum);
 		    }
 		}
 
@@ -410,22 +411,22 @@ public class CompressionEncryption extends WorkflowStep {
 		    context.log("Added header for " + cname);
 		}
 		for (String file : imputedChromosome.getDataFiles()) {
-			synchronized (this) {
-				context.log("Adding file " + file + " for " + cname);
-			}
+		    //synchronized (this) {
+			    //context.log("Adding file " + file + " for " + cname);
+		    //}
 			vcfFile.addFile(HdfsUtil.open(file));
 			HdfsUtil.delete(file);
 		}
 		vcfFile.close();
 		synchronized (this) {
 		    String checksum = FileChecksum.HashFile(new File(dosageOutput), FileChecksum.Algorithm.MD5);
-		    context.log("Checksum for "+dosageOutput+": "+checksum);
+		    //context.log("Checksum for "+dosageOutput+": "+checksum);
 		}
 		//files.add(new File(dosageOutput));
 		filenames.add(dosageOutput);
-		synchronized (this) {
-		    context.log("Saving DOSE / PHASED for " + cname + " in " + dosageOutput);
-		}
+		//synchronized (this) {
+		    //context.log("Saving DOSE / PHASED for " + cname + " in " + dosageOutput);
+		//}
 		
 		// merge all meta files
 		if (mergeMetaFiles) {
@@ -435,15 +436,15 @@ public class CompressionEncryption extends WorkflowStep {
 			String dosageMetaOutput = FileUtil.path(tempdir, "chr" + cname + ".empiricalDose.vcf.gz");
 			MergedVcfFile vcfFileMeta = new MergedVcfFile(dosageMetaOutput);
 			String headerMetaFile = imputedChromosome.getHeaderMetaFiles().get(0);
-			synchronized (this) {
-				context.log("Using header from file " + headerMetaFile+" for "+cname);
-			}
+			//synchronized (this) {
+			    //context.log("Using header from file " + headerMetaFile+" for "+cname);
+			//}
 			vcfFileMeta.addFile(HdfsUtil.open(headerMetaFile));
 
 			for (String file : imputedChromosome.getDataMetaFiles()) {
-				synchronized (this) {
-					context.log("Adding META file " + file+" for "+cname);
-				}
+			    //synchronized (this) {
+				    //context.log("Adding META file " + file+" for "+cname);
+				    //}
 				vcfFileMeta.addFile(HdfsUtil.open(file));
 				HdfsUtil.delete(file);
 			}
@@ -455,7 +456,7 @@ public class CompressionEncryption extends WorkflowStep {
 			filenames.add(dosageMetaOutput);
 			synchronized (this) {
 			    String checksum = FileChecksum.HashFile(new File(dosageMetaOutput), FileChecksum.Algorithm.MD5);
-			    context.log("Checksum for "+dosageMetaOutput+": "+checksum);
+			    //context.log("Checksum for "+dosageMetaOutput+": "+checksum);
 			}
 		}
 

@@ -63,13 +63,13 @@ public class Imputation extends ParallelHadoopJobStep {
 		File file_jc = new File(folder + "/job.config");
 		DefaultPreferenceStore store_jc = new DefaultPreferenceStore();
 		if (file_jc.exists()) {
-		    log.info("Loading distributed configuration file '" + file_jc.getAbsolutePath() + "'...");
+		    //log.info("Loading distributed configuration file '" + file_jc.getAbsolutePath() + "'...");
+		    log.info("Loading distributed configuration file ...");
 		    store_jc.load(file_jc);
 
 		} else {
-		    log.info("Configuration file '" + file_jc.getAbsolutePath()
-			     + "' not available. Use default values");
-
+		    //log.info("Configuration file '" + file_jc.getAbsolutePath()+ "' not available. Use default values");
+		    log.info("Configuration file not available. Use default values");
 		}
 
 		int big_job_size=1000000; // so that all jobs use small_job_queue
@@ -127,14 +127,14 @@ public class Imputation extends ParallelHadoopJobStep {
 		context.println("  Name: " + reference);
 		context.println("  ID: " + panel.getId());
 		context.println("  Build: " + panel.getBuild());
-		context.println("  Location: " + panel.getHdfs());
-		context.println("  Legend: " + panel.getLegend());
+		//context.println("  Location: " + panel.getHdfs());
+		//context.println("  Legend: " + panel.getLegend());
 		context.println("  Version: " + panel.getVersion());
-		context.println("  Eagle Map: " + panel.getMapEagle());
-		context.println("  Eagle BCFs: " + panel.getRefEagle());
-		context.println("  Beagle Bref3: " + panel.getRefBeagle());
-		context.println("  Beagle Map: " + panel.getMapBeagle());
-		context.println("  Minimac Map: " + panel.getMapMinimac());
+		//context.println("  Eagle Map: " + panel.getMapEagle());
+		//context.println("  Eagle BCFs: " + panel.getRefEagle());
+		//context.println("  Beagle Bref3: " + panel.getRefBeagle());
+		//context.println("  Beagle Map: " + panel.getMapBeagle());
+		//context.println("  Minimac Map: " + panel.getMapMinimac());
 		context.println("  Populations:");
 		for (Map.Entry<String, String> entry : panel.getPopulations().entrySet()) {
 			context.println("    " + entry.getKey() + "/" + entry.getValue());
@@ -152,7 +152,7 @@ public class Imputation extends ParallelHadoopJobStep {
 
 		String includeScoreFilenameHdfs = null;
 		if (pgsPanel != null) {
-			context.println("  PGS: " + FileUtil.getFilename(pgsPanel.getScores()));
+		    //context.println("  PGS: " + FileUtil.getFilename(pgsPanel.getScores()));
 
 			if (pgsCategory != null && !pgsCategory.isEmpty() && !pgsCategory.equals("all")) {
 				String includeScoreFilename = FileUtil.path(context.getLocalTemp(), "include-scores.txt");
@@ -198,19 +198,19 @@ public class Imputation extends ParallelHadoopJobStep {
 						File file = new File(folder + "/" + CONFIG_FILE);
 						DefaultPreferenceStore preferenceStore = new DefaultPreferenceStore();
 						if (file.exists()) {
-							log.info("Loading distributed configuration file '" + file.getAbsolutePath() + "'...");
+						    //log.info("Loading distributed configuration file '" + file.getAbsolutePath() + "'...");
+							log.info("Loading distributed configuration file ...");
 							preferenceStore.load(file);
 
 						} else {
-							log.info("Configuration file '" + file.getAbsolutePath()
-									+ "' not available. Use default values");
-
+						    //log.info("Configuration file '" + file.getAbsolutePath()+ "' not available. Use default values");
+							log.info("Configuration file not available. Use default values");
 						}
 
 						preferenceStore.write(getConfiguration());
-						for (Object key : preferenceStore.getKeys()) {
-							log.info("  " + key + ": " + preferenceStore.getString(key.toString()));
-						}
+						// for (Object key : preferenceStore.getKeys()) {
+						// 	log.info("  " + key + ": " + preferenceStore.getString(key.toString()));
+						// }
 
 					}
 				};
@@ -380,30 +380,32 @@ public class Imputation extends ParallelHadoopJobStep {
 	String output=context.get("outputimputation");
 	String logDir=context.get("hadooplogs");
 
-	context.println("output: "+output);
-	context.println("log dir: "+logDir);
+	//context.println("output: "+output);
+	//context.println("log dir: "+logDir);
 
 	try{
 	    List<String> folders=HdfsUtil.getDirectories(output);
 	    for (String f:folders){
-		context.println("folder: "+f);
+		//context.println("folder: "+f);
 		List<String> L=HdfsUtil.getFiles(f,".out");
 		for (String s:L){
 		    if (HdfsUtil.exists(s)){
-			context.println("src: "+s);
+			//context.println("src: "+s);
 			HdfsUtil.exportFile(logDir,s);
 		    }
 		    else
-			context.println("File "+s+" does not exist");
+			context.println("File does not exist");
+		    //context.println("File "+s+" does not exist");
 		}
 		L=HdfsUtil.getFiles(f,".err");
 		for (String s:L){
 		    if (HdfsUtil.exists(s)){
-			context.println("src: "+s);
+			//context.println("src: "+s);
 			HdfsUtil.exportFile(logDir,s);
 		    }
 		    else
-			context.println("File "+s+" does not exist");
+			context.println("File does not exist");
+		    //context.println("File "+s+" does not exist");
 		}
 	    }
 	}catch (IOException e) {
@@ -417,7 +419,7 @@ public class Imputation extends ParallelHadoopJobStep {
 	private void printSummary() {
 		context.println("Summary: ");
 		String log = context.get("hadooplogs");
-		context.println("log: "+log);
+		//context.println("log: "+log);
 
 		for (String id : jobs.keySet()) {
 
@@ -455,7 +457,6 @@ public class Imputation extends ParallelHadoopJobStep {
 	}
 
 	// update message
-
 	private synchronized String updateMessage() {
 
 		String text = "";
@@ -555,7 +556,8 @@ public class Imputation extends ParallelHadoopJobStep {
 			// if chr X --> delete results
 			if (id.startsWith("X.")) {
 				String outputFolder = HdfsUtil.path(output, id);
-				context.println("Delete output folder for " + id + ": " + outputFolder);
+				//context.println("Delete output folder for " + id + ": " + outputFolder);
+				context.println("Delete output folder for " + id);
 				HdfsUtil.delete(outputFolder);
 			}
 

@@ -37,8 +37,8 @@ public class MergedVcfFile {
 		// simple header check
 		String headerLine = null;
 		for (String file : files) {
-
-			context.println("Read header file " + file);
+		    //context.println("Read header file " + file);
+			context.println("Read header file");
 			LineReader reader = null;
 			try {
 				reader = new LineReader(HdfsUtil.open(file));
