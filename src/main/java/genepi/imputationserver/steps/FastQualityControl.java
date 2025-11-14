@@ -114,6 +114,15 @@ public class FastQualityControl extends WorkflowStep {
 			return false;
 		}
 
+		LineWriter logWriter = null;
+		String logFile = FileUtil.path(statDir, "QC.log");
+		try {
+			logWriter = new LineWriter(logFile);
+		} catch (Exception e) {
+			context.error("Error creating log file writer");
+			return false;
+		}
+
 		LineWriter alleleSwitchWriter = null;
 		String alleleSwitchFile = FileUtil.path(statDir, "snps-alleleswitch.txt");
 		try {
@@ -160,6 +169,7 @@ public class FastQualityControl extends WorkflowStep {
 		task.setVcfFilenames(vcfFilenames);
 		task.setExcludedSnpsWriter(excludedSnpsWriter);
 		task.setAlleleSwitchWriter(alleleSwitchWriter);
+		task.setLogWriter(logWriter);
 		task.setChunkSize(chunkSize);
 		task.setPhasingWindow(phasingWindow);
 		task.setPopulation(population);
@@ -257,6 +267,8 @@ public class FastQualityControl extends WorkflowStep {
 			if (!alleleSwitchWriter.hasData()) {
 				FileUtil.deleteFile(alleleSwitchFile);
 			}
+
+			logWriter.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
