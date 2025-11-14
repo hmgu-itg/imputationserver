@@ -235,7 +235,7 @@ workflow:
     - id: hadooplogs
       description: Hadoop Task Logs
       type: local-folder
-      download: true
+      download: flase
       temp: false
       autoExport: true
       adminOnly: true
