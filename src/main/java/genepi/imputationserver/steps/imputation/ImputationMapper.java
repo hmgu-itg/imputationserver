@@ -149,17 +149,17 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 	// create temp directory
 	DefaultPreferenceStore store = new DefaultPreferenceStore(context.getConfiguration());
 	// report store content
-	for (Object s: store.getKeys()){
-	    log.info("store: "+s.toString()+"="+store.getString(s.toString()));
-	}
+	//for (Object s: store.getKeys()){
+	//    log.info("store: "+s.toString()+"="+store.getString(s.toString()));
+	//}
 	String mm4_tmp=store.getString("minimac.tmp");
-	log.info("minimac.tmp from the DefaultPreferenceStore: "+mm4_tmp);
+	//log.info("minimac.tmp from the DefaultPreferenceStore: "+mm4_tmp);
 	String task_attempt_id=context.getTaskAttemptID().toString();
-	log.info("Task attempt ID: "+task_attempt_id);
+	//log.info("Task attempt ID: "+task_attempt_id);
 	folder = FileUtil.path(mm4_tmp,task_attempt_id);
-	log.info("Task attempt folder: "+folder);
+	//log.info("Task attempt folder: "+folder);
 	int mm4_temp_buffer=Integer.parseInt(store.getString("minimac4.temp.buffer"));
-	log.info("minimac4 temp buffer: "+mm4_temp_buffer);
+	//log.info("minimac4 temp buffer: "+mm4_temp_buffer);
 	boolean created = FileUtil.createDirectory(folder);
 
 	if (!created) {
@@ -236,15 +236,15 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 	pipeline.setMinimac4Threads(Integer.parseInt(store.getString("minimac4.threads")));
 	pipeline.setMinimac4TempBuffer(mm4_temp_buffer);
 	String mm4_prefix=FileUtil.path(folder,"mm4_temp_");
-	log.info("Minimac temp prefix: "+mm4_prefix);
-	log.info("output: "+output);
+	//log.info("Minimac temp prefix: "+mm4_prefix);
+	//log.info("output: "+output);
 	pipeline.setMinimac4TempPrefix(mm4_prefix);
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
 	// delete temp directory
-	log.info("Removing "+folder);
+	//log.info("Removing "+folder);
 	FileUtil.deleteDirectory(folder);
 	log.close();
     }
@@ -274,7 +274,7 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 	    InetAddress addr = java.net.InetAddress.getLocalHost();
 	    String hostname = addr.getHostName();
 	    
-	    log.info(context.getJobName()+"\t"+hdfsPath+"\t"+hostname+"\t"+chunk);
+	    //log.info(context.getJobName()+"\t"+hdfsPath+"\t"+hostname+"\t"+chunk);
 	    log.info("EXECUTING PIPELINE on host: "+hostname);
 	    boolean succesful = pipeline.execute(chunk, outputChunk,log);
 	    log.info("DONE EXECUTING PIPELINE on host: "+hostname+", RESULT: "+succesful);
@@ -288,28 +288,28 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 		String fn=outputChunk.getEagleOutFilename();
 		File f=new File(fn);
 		if (f.exists()){
-		    log.info("copying "+fn+" to "+output);
+		    //log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
 		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getEagleErrFilename();
 		f=new File(fn);
 		if (f.exists()){
-		    log.info("copying "+fn+" to "+output);
+		    //log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
 		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getMinimacOutFilename();
 		f=new File(fn);
 		if (f.exists()){
-		    log.info("copying "+fn+" to "+output);
+		    //log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
 		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
 		fn=outputChunk.getMinimacErrFilename();
 		f=new File(fn);
 		if (f.exists()){
-		    log.info("copying "+fn+" to "+output);
+		    //log.info("copying "+fn+" to "+output);
 		    String att=f.getParentFile().getName();
 		    HdfsUtil.put(fn,HdfsUtil.path(output,hostname+"_"+att+"_"+FileUtil.getFilename(fn)));
 		}
@@ -354,7 +354,7 @@ public class ImputationMapper extends Mapper<LongWritable, Text, Text, Text> {
 	    long endTotal = System.currentTimeMillis();
 	    long timeTotal = (endTotal - startTotal) / 1000;
 
-	    log.info(context.getJobName()+"\t"+hdfsPath+"\t"+hostname+"\t"+chunk+"\t"+statistics.toString()+"\t"+timeTotal);
+	    //log.info(context.getJobName()+"\t"+hdfsPath+"\t"+hostname+"\t"+chunk+"\t"+statistics.toString()+"\t"+timeTotal);
 	} catch (Exception e) {
 	    if (!debugging) {
 		System.out.println("Mapper Task failed.");
