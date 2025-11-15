@@ -67,13 +67,13 @@ public class ImputationPipeline {
 	System.out.println("Starting pipeline for chunk " + chunk + " [Phased: " + chunk.isPhased() + "]...");
 
 		if (!new File(refFilename).exists()) {
-			log.info("ReferencePanel '" + refFilename + "' not found.");
+			//log.info("ReferencePanel '" + refFilename + "' not found.");
 			System.out.println("ReferencePanel '" + refFilename + "' not found.");
 			return false;
 		}
 
 		if (!new File(output.getVcfFilename()).exists()) {
-			log.info("vcf.gz file not found: " + output.getVcfFilename());
+			//log.info("vcf.gz file not found: " + output.getVcfFilename());
 			System.out.println("vcf.gz file not found: " + output.getVcfFilename());
 			return false;
 		}
@@ -88,10 +88,10 @@ public class ImputationPipeline {
 		Command tabix = new Command(tabixCommand);
 		tabix.setSilent(false);
 		tabix.setParams(output.getVcfFilename());
-			log.info("TABIX Command: " + tabix.getExecutedCommand());
+			//log.info("TABIX Command: " + tabix.getExecutedCommand());
 		System.out.println("Command: " + tabix.getExecutedCommand());
 		if (tabix.execute() != 0) {
-			log.info("Error during index creation: " + tabix.getStdOut());
+			//log.info("Error during index creation: " + tabix.getStdOut());
 			System.out.println("Error during index creation: " + tabix.getStdOut());
 			return false;
 		}
@@ -99,7 +99,7 @@ public class ImputationPipeline {
 		if (chunk.isPhased()) {
 
 			FileUtils.moveFile(new File(output.getVcfFilename()), new File(output.getPhasedVcfFilename()));
-			log.info("Chunk already phased. Move file " + output.getVcfFilename() + " to "
+			//log.info("Chunk already phased. Move file " + output.getVcfFilename() + " to "
 					+ output.getPhasedVcfFilename() + ".");
 			System.out.println("Chunk already phased. Move file " + output.getVcfFilename() + " to "
 					+ output.getPhasedVcfFilename() + ".");
@@ -114,7 +114,7 @@ public class ImputationPipeline {
 			if (phasingEngine.equals("beagle")) {
 
 				if (!new File(refBeagleFilename).exists()) {
-			log.info("Beagle: Reference '" + refBeagleFilename + "' not found.");
+			//log.info("Beagle: Reference '" + refBeagleFilename + "' not found.");
 					System.out.println("Beagle: Reference '" + refBeagleFilename + "' not found.");
 					return false;
 				}
@@ -123,7 +123,7 @@ public class ImputationPipeline {
 			} else {
 
 				if (!new File(refEagleFilename).exists()) {
-			log.info("Eagle: Reference '" + refEagleFilename + "' not found.");
+			//log.info("Eagle: Reference '" + refEagleFilename + "' not found.");
 					System.out.println("Eagle: Reference '" + refEagleFilename + "' not found.");
 					return false;
 				}
@@ -246,7 +246,7 @@ public class ImputationPipeline {
 		eagle.setParams(params);
 		eagle.saveStdOut(output.getPrefix() + ".eagle.out");
 		eagle.saveStdErr(output.getPrefix() + ".eagle.err");
-		log.info("Eagle Command: " + eagle.getExecutedCommand());
+		//log.info("Eagle Command: " + eagle.getExecutedCommand());
 
 		int status = eagle.execute();
 
@@ -364,9 +364,9 @@ public class ImputationPipeline {
 		minimac.saveStdOut(output.getPrefix() + ".minimac.out");
 		minimac.saveStdErr(output.getPrefix() + ".minimac.err");
 
-		for (String subs: minimac.getExecutedCommand().split("\\s+")){
-		    log.info("Minimac Command: " + subs);
-		}
+		//for (String subs: minimac.getExecutedCommand().split("\\s+")){
+		    //log.info("Minimac Command: " + subs);
+		//}
 		int status = minimac.execute();
 		System.out.println("Minimac return status: " + status);
 
