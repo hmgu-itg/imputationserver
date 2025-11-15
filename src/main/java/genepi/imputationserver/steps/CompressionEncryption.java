@@ -303,19 +303,31 @@ public class CompressionEncryption extends WorkflowStep {
     // using external call of 7z to create archive
     public void createEncryptedZipFile7z(String output_fname, List<String> fnames, String password,int threads) throws IOException,InterruptedException {
 	List<String> cmd_args=new ArrayList<String>();
-	cmd_args.add("/mnt/storage/bin/7z_wrapper.sh");
-	cmd_args.add("-p");
-	cmd_args.add(password);
-	cmd_args.add("-t");
-	cmd_args.add(String.valueOf(threads));	
-	cmd_args.add("-o");
-	cmd_args.add(output_fname);
+	cmd_args.add("/usr/bin/bash");
+	cmd_args.add("-c");
+	String s="/mnt/storage/bin/7z_wrapper.sh -o "+output_fname;
 	for (String f:fnames){
-	    cmd_args.add("-i");
-	    cmd_args.add(f);
+	    s=s+" -i "+f;
 	}
-	
+	cmd_args.add(s);
+
 	ProcessBuilder builder = new ProcessBuilder(cmd_args);
+	Map<String, String> env=builder.environment();
+        env.put("PWD7Z",password);
+
+	// cmd_args.add("/mnt/storage/bin/7z_wrapper.sh");
+	// cmd_args.add("-p");
+	// cmd_args.add(password);
+	// cmd_args.add("-t");
+	// cmd_args.add(String.valueOf(threads));	
+	// cmd_args.add("-o");
+	// cmd_args.add(output_fname);
+	// for (String f:fnames){
+	//     cmd_args.add("-i");
+	//     cmd_args.add(f);
+	// }
+	
+	// ProcessBuilder builder = new ProcessBuilder(cmd_args);
 	File sink=new File("/dev/null");
 	builder.redirectOutput(sink);
 	builder.redirectError(sink);
