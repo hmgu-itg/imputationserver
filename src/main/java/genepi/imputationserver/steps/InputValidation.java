@@ -143,8 +143,9 @@ public class InputValidation extends WorkflowStep {
 					vcfFile.setPhased(true);
 				}
 
+				String chr_from_file=vcfFile.getChromosome();
 				if (VcfFileUtil.isValidChromosome(vcfFile.getChromosome())) {
-
+				    context.log("\""+chr_from_file+"\" is valid");
 					validVcfFiles.add(vcfFile);
 					chromosomes.add(vcfFile.getChromosome());
 
@@ -240,6 +241,11 @@ public class InputValidation extends WorkflowStep {
 					}
 
 				} else {
+				    context.log("\""+chr_from_file+"\" is NOT valid");
+				    byte [] bt=chr_from_file.getBytes();
+				    for (byte b:bt){
+					context.log("byte: "+b);
+				    }
 					context.endTask("No valid chromosomes found!", WorkflowContext.ERROR);
 					return false;
 				}
