@@ -68,6 +68,7 @@ workflow:
        category: RefPanel
 
      - id: chunksize
+       visible: false
        description: Chunk size
        type: list
        value: 1GB
